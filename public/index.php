@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Controller\AdminController;
+use App\Controller\ArticleController;
+use App\Controller\AuthController;
+use App\Controller\ClientController;
+use App\Controller\TicketController;
+use App\Core\Auth;
+use App\Core\Env;
+use App\Core\Request;
+use App\Core\Router;
+use App\Core\Session;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+Env::load(__DIR__ . '/../.env');
+Session::start();
+
+$router = new Router();
+
+$router->get('/', [AuthController::class, 'showLogin']);
+$router->get('/login', [AuthController::class, 'showLogin']);
+$router->post('/login', [AuthController::class, 'login']);
+$router->post('/logout', [AuthController::class, 'logout']);
+
+$router->get('/tickets', [TicketController::class, 'index'], auth: true);
+$router->get('/tickets/create', [TicketController::class, 'create'], auth: true);
+$router->post('/tickets', [TicketController::class, 'store'], auth: true);
+$router->get('/tickets/{id}', [TicketController::class, 'show'], auth: true);
+$router->post('/tickets/{id}/statut', [TicketController::class, 'changerStatut'], auth: true);
+$router->post('/tickets/{id}/assigner', [TicketController::class, 'assigner'], auth: true);
+
+$router->get('/clients', [ClientController::class, 'index'], auth: true);
+$router->get('/clients/create', [ClientController::class, 'create'], auth: true);
+$router->post('/clients', [ClientController::class, 'store'], auth: true);
+
+$router->get('/articles', [ArticleController::class, 'index'], auth: true);
+
+$router->get('/admin/techniciens', [AdminController::class, 'techniciens'], auth: true, admin: true);
+$router->post('/admin/techniciens', [AdminController::class, 'creerTechnicien'], auth: true, admin: true);
+
+$router->dispatch(Request::fromGlobals(), new Auth());
