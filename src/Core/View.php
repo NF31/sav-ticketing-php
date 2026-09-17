@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+/**
+ * Rendu en deux passes (template capture d'abord, puis layout) plutot que
+ * de require directement le layout depuis le template : ca permet au
+ * layout de decider ou placer $content (avant/apres la nav, etc.) sans
+ * que chaque template ait a connaitre la structure du layout.
+ */
 final class View
 {
     private const string TEMPLATES_DIR = __DIR__ . '/../../templates';

@@ -24,6 +24,9 @@ final class Auth
             return false;
         }
 
+        // Nouvel identifiant de session apres authentification : evite la
+        // fixation de session (un attaquant qui aurait fixe un session id
+        // avant le login ne recupere pas une session desormais authentifiee).
         Session::regenerate();
         Session::set(self::SESSION_KEY, $user->id);
 
