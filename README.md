@@ -96,14 +96,16 @@ Laravel) :
 - `resend` : envoi reel via l'API HTTP de [Resend](https://resend.com),
   appelee directement avec curl (sans SDK ni dependance). Renseigner
   `RESEND_API_KEY` (cle creee sur https://resend.com/api-keys),
-  `MAIL_FROM_ADDRESS` et `MAIL_FROM_NAME`. Le domaine de l'adresse doit
-  etre verifie sur https://resend.com/domains (enregistrements DNS) ; sans
-  domaine verifie, seul `onboarding@resend.dev` est accepte, et
-  uniquement vers l'adresse du compte Resend.
+  `MAIL_FROM_ADDRESS` et `MAIL_FROM_NAME`. Avec `onboarding@resend.dev`
+  (aucun domaine a configurer), Resend n'envoie qu'a l'adresse du compte
+  Resend proprietaire de la cle : suffisant pour tester. Pour ecrire a
+  n'importe quel utilisateur, verifier un domaine sur
+  https://resend.com/domains (enregistrements DNS) et utiliser une
+  adresse de ce domaine.
 
 ```dotenv
 MAIL_MAILER=resend
-MAIL_FROM_ADDRESS=noreply@mondomaine.fr
+MAIL_FROM_ADDRESS=onboarding@resend.dev
 MAIL_FROM_NAME="SAV Ticketing"
 RESEND_API_KEY=re_...
 ```
