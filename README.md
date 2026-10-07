@@ -69,6 +69,9 @@ docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < databas
 docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/seed.sql
 
 composer serve   # http://localhost:8090
+# equivalent : PHP_CLI_SERVER_WORKERS=4 php -S localhost:8090 -t public
+# (4 workers : le serveur integre de PHP ne traite sinon qu'une requete a
+# la fois, et l'envoi d'un email bloquerait la page suivante ~0,5 s)
 ```
 
 Comptes de demo (mot de passe `password` pour tous) :
