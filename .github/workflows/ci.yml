@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un nouveau push sur la meme branche annule le run precedent, devenu inutile.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (PHP 8.5 + MariaDB 11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Meme base qu'en local (README) : les tests d'integration tournent
+    # contre une vraie MariaDB, pas contre un mock.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sav_ticketing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Installer PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, curl, mbstring
+          coverage: none
+          tools: composer
+
+      - name: Valider composer.json
+        run: composer validate --strict --no-check-publish
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Installer les dependances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Verifier la syntaxe PHP
+        run: find src public tests templates -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      # Charge via le client du conteneur MariaDB lui-meme, pour ne pas
+      # dependre du client MySQL installe sur le runner.
+      - name: Creer le schema et les donnees de demo
+        run: |
+          docker exec -i ${{ job.services.mariadb.id }} mariadb -uroot -proot sav_ticketing < database/schema.sql
+          docker exec -i ${{ job.services.mariadb.id }} mariadb -uroot -proot sav_ticketing < database/seed.sql
+
+      # .env de test : port de la base du service ci-dessus, et emails ecrits
+      # dans var/mail.log (aucun envoi reel, aucun secret necessaire).
+      - name: Configurer l'environnement de test
+        run: |
+          cp .env.example .env
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/; s/^MAIL_MAILER=.*/MAIL_MAILER=log/' .env
+
+      - name: Lancer les tests
+        run: composer test
