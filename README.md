@@ -31,6 +31,7 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 | Tables `administrateur` et `techniciens` dupliquees | Table `users` unique avec `role` (enum natif PHP) |
 | Aucun suivi des changements de statut | Table `ticket_historique`, alimentee dans une transaction |
 | Statut modifiable vers n'importe quelle valeur | Machine a etats : transitions autorisees definies par statut |
+| Aucune recuperation de mot de passe | "Mot de passe oublie" : lien a usage unique, valable 1 h, jeton stocke hashe (SHA-256) |
 
 ## Stack
 
@@ -68,6 +69,22 @@ Comptes de demo (mot de passe `password` pour tous) :
 - `admin@sav.local` — administrateur
 - `karim.diallo@sav.local` — technicien SAV
 - `lea.nguyen@sav.local` — technicien hotline
+
+### Mot de passe oublie
+
+Lien "Mot de passe oublie ?" sous le formulaire de connexion. Aucun
+serveur SMTP n'est configure : l'email (avec le lien de
+reinitialisation) est ecrit dans `var/mail.log`. Le domaine du lien
+vient de `APP_URL` dans `.env`, jamais de l'en-tete `Host` de la requete
+(qui est falsifiable).
+
+Base creee avant l'ajout de cette fonctionnalite : creer la table
+manquante avec
+
+```bash
+sed -n '/CREATE TABLE password_resets/,$p' database/schema.sql \
+  | docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing
+```
 
 ## Tests
 

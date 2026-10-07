@@ -26,7 +26,10 @@ final class AuthController
             return;
         }
 
-        View::render('auth/login', ['error' => Session::pullFlash('error')]);
+        View::render('auth/login', [
+            'error' => Session::pullFlash('error'),
+            'success' => Session::pullFlash('success'),
+        ]);
     }
 
     public function login(Request $request): void
