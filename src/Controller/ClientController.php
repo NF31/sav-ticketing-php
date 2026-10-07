@@ -8,6 +8,7 @@ use App\Core\Request;
 use App\Core\Session;
 use App\Core\View;
 use App\Repository\ClientRepository;
+use App\Validation\ClientValidator;
 
 final class ClientController
 {
@@ -20,37 +21,53 @@ final class ClientController
 
     public function index(Request $request): void
     {
-        View::render('clients/index', ['clients' => $this->clients->findAll()]);
+        View::render('clients/index', [
+            'clients' => $this->clients->findAll(),
+            'success' => Session::pullFlash('success'),
+        ]);
     }
 
     public function create(Request $request): void
     {
-        View::render('clients/create', ['error' => Session::pullFlash('error')]);
+        View::render('clients/create', [
+            'erreurs' => Session::pullFlashDonnees('erreurs'),
+            'anciennes' => Session::pullFlashDonnees('anciennes'),
+            'longueurMaxNom' => ClientValidator::LONGUEUR_MAX_NOM,
+            'longueurMaxEmail' => ClientValidator::LONGUEUR_MAX_EMAIL,
+            'longueurMaxRue' => ClientValidator::LONGUEUR_MAX_RUE,
+            'longueurMaxVille' => ClientValidator::LONGUEUR_MAX_VILLE,
+        ]);
     }
 
     public function store(Request $request): void
     {
-        $nom = $request->input('nom');
-        $prenom = $request->input('prenom');
-        $email = $request->input('email');
+        $donnees = ClientValidator::normaliser($_POST);
+        $erreurs = ClientValidator::valider($donnees, $this->clients->emailExiste(...));
 
-        if ($nom === '' || $prenom === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            Session::flash('error', 'Nom, prenom et email valide sont obligatoires.');
-            header('Location: /clients/create');
+        if ($erreurs === []) {
+            $id = $this->clients->create(
+                $donnees['nom'],
+                $donnees['prenom'],
+                $donnees['email'],
+                $donnees['telephone'] ?: null,
+                $donnees['adresse_rue'] ?: null,
+                $donnees['adresse_ville'] ?: null,
+                $donnees['adresse_code_postal'] ?: null,
+            );
 
-            return;
+            if ($id !== null) {
+                Session::flash('success', "Client {$donnees['prenom']} {$donnees['nom']} cree.");
+                header('Location: /clients');
+
+                return;
+            }
+
+            // Email pris entre la verification et l'INSERT (creation simultanee).
+            $erreurs['email'] = 'Un client existe deja avec cet email.';
         }
 
-        $this->clients->create(
-            $nom,
-            $prenom,
-            $email,
-            $request->input('telephone') ?: null,
-            $request->input('adresse_rue') ?: null,
-            $request->input('adresse_ville') ?: null,
-            $request->input('adresse_code_postal') ?: null,
-        );
-
-        header('Location: /clients');
+        Session::flashDonnees('erreurs', $erreurs);
+        Session::flashDonnees('anciennes', $donnees);
+        header('Location: /clients/create');
     }
 }
