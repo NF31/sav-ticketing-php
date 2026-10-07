@@ -92,31 +92,74 @@ final class MailTest extends TestCase
         }
     }
 
-    public function testLaFactoryChoisitLeDriver(): void
+    public function testLaFactoryChoisitLeMailer(): void
     {
-        $_ENV['MAIL_DRIVER'] = 'log';
+        $_ENV['MAIL_MAILER'] = 'log';
         self::assertInstanceOf(LogMailer::class, MailerFactory::depuisEnv());
 
-        $_ENV['MAIL_DRIVER'] = 'resend';
+        $_ENV['MAIL_MAILER'] = 'resend';
         $_ENV['RESEND_API_KEY'] = 're_x';
-        $_ENV['MAIL_FROM'] = 'SAV <sav@exemple.fr>';
+        $_ENV['MAIL_FROM_ADDRESS'] = 'noreply@exemple.fr';
+        $_ENV['MAIL_FROM_NAME'] = 'SAV Ticketing';
         self::assertInstanceOf(ResendMailer::class, MailerFactory::depuisEnv());
+    }
+
+    public function testLExpediteurCombineNomEtAdresse(): void
+    {
+        $_ENV['MAIL_MAILER'] = 'resend';
+        $_ENV['RESEND_API_KEY'] = 're_x';
+        $_ENV['MAIL_FROM_ADDRESS'] = 'noreply@exemple.fr';
+
+        $expediteur = function (): string {
+            $requete = null;
+            $mailer = MailerFactory::depuisEnv();
+            // Expediteur lu via la requete envoyee : on remplace le transport HTTP.
+            $proprieteRequete = new \ReflectionProperty(ResendMailer::class, 'requeteHttp');
+            $proprieteRequete->setValue($mailer, function (string $url, array $entetes, string $json) use (&$requete): array {
+                $requete = json_decode($json, true);
+
+                return ['statut' => 200, 'corps' => '{}'];
+            });
+            $mailer->send('a@exemple.fr', 'S', 'C');
+
+            return $requete['from'];
+        };
+
+        $_ENV['MAIL_FROM_NAME'] = 'SAV Ticketing';
+        self::assertSame('SAV Ticketing <noreply@exemple.fr>', $expediteur());
+
+        $_ENV['MAIL_FROM_NAME'] = '';
+        self::assertSame('noreply@exemple.fr', $expediteur());
+
+        $_ENV['MAIL_FROM_NAME'] = 'SAV <pirate> "x"';
+        self::assertSame('SAV pirate x <noreply@exemple.fr>', $expediteur());
     }
 
     public function testResendSansCleEstUneErreurDeConfiguration(): void
     {
-        $_ENV['MAIL_DRIVER'] = 'resend';
+        $_ENV['MAIL_MAILER'] = 'resend';
         $_ENV['RESEND_API_KEY'] = '';
-        $_ENV['MAIL_FROM'] = 'SAV <sav@exemple.fr>';
+        $_ENV['MAIL_FROM_ADDRESS'] = 'noreply@exemple.fr';
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('RESEND_API_KEY');
         MailerFactory::depuisEnv();
     }
 
-    public function testDriverInconnuEstUneErreurDeConfiguration(): void
+    public function testAdresseExpediteurInvalideEstUneErreurDeConfiguration(): void
     {
-        $_ENV['MAIL_DRIVER'] = 'smtp';
+        $_ENV['MAIL_MAILER'] = 'resend';
+        $_ENV['RESEND_API_KEY'] = 're_x';
+        $_ENV['MAIL_FROM_ADDRESS'] = 'SAV <noreply@exemple.fr>';
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('MAIL_FROM_ADDRESS');
+        MailerFactory::depuisEnv();
+    }
+
+    public function testMailerInconnuEstUneErreurDeConfiguration(): void
+    {
+        $_ENV['MAIL_MAILER'] = 'smtp';
 
         $this->expectException(RuntimeException::class);
         MailerFactory::depuisEnv();

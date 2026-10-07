@@ -88,17 +88,25 @@ du lien envoye vient de `APP_URL` dans `.env`, jamais de l'en-tete
 
 ### Envoi des emails
 
-Choisi par `MAIL_DRIVER` dans `.env` :
+Choisi par `MAIL_MAILER` dans `.env` (memes noms de variables que
+Laravel) :
 
 - `log` (defaut) : rien n'est envoye, l'email est ecrit dans
   `var/mail.log`. Aucun compte necessaire.
 - `resend` : envoi reel via l'API HTTP de [Resend](https://resend.com),
   appelee directement avec curl (sans SDK ni dependance). Renseigner
-  `RESEND_API_KEY` (cle creee sur https://resend.com/api-keys) et
-  `MAIL_FROM`. Sans domaine verifie chez Resend, seul l'expediteur
-  `onboarding@resend.dev` est accepte, et uniquement vers l'adresse du
-  compte Resend ; pour ecrire a n'importe qui, verifier son domaine
-  (enregistrements DNS) puis mettre `MAIL_FROM=SAV <sav@mondomaine.fr>`.
+  `RESEND_API_KEY` (cle creee sur https://resend.com/api-keys),
+  `MAIL_FROM_ADDRESS` et `MAIL_FROM_NAME`. Le domaine de l'adresse doit
+  etre verifie sur https://resend.com/domains (enregistrements DNS) ; sans
+  domaine verifie, seul `onboarding@resend.dev` est accepte, et
+  uniquement vers l'adresse du compte Resend.
+
+```dotenv
+MAIL_MAILER=resend
+MAIL_FROM_ADDRESS=noreply@mondomaine.fr
+MAIL_FROM_NAME="SAV Ticketing"
+RESEND_API_KEY=re_...
+```
 
 L'email est envoye **apres** la reponse au navigateur
 (`ApresReponse`) : un appel a Resend prend ~0,5 s, et sur "mot de passe

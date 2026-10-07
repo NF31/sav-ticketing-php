@@ -19,7 +19,7 @@ final class ResendMailer implements Mailer
     private Closure $requeteHttp;
 
     /**
-     * @param string $expediteur ex. "SAV Ticketing <sav@mondomaine.fr>" ; le domaine doit etre verifie chez Resend
+     * @param string $expediteur ex. "SAV Ticketing <noreply@mondomaine.fr>" ; le domaine doit etre verifie chez Resend
      * @param Closure|null $requeteHttp injectable pour les tests (aucun appel reseau) ; curl par defaut
      */
     public function __construct(
