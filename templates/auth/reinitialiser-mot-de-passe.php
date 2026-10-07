@@ -9,6 +9,7 @@
         <p class="alert alert-error"><?= e($error) ?></p>
     <?php endif; ?>
     <form action="/mot-de-passe/reinitialiser/<?= e($jeton) ?>" method="post">
+        <?= csrf_champ() ?>
         <label for="password">Nouveau mot de passe (<?= $longueurMin ?> caracteres minimum)</label>
         <input type="password" id="password" name="password" minlength="<?= $longueurMin ?>" required autofocus autocomplete="new-password">
 

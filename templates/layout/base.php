@@ -26,6 +26,7 @@ $user = $auth->user();
             <div class="user-box">
                 <span><?= e($user->nomComplet()) ?> (<?= e($user->role->label()) ?>)</span>
                 <form action="/logout" method="post">
+                    <?= csrf_champ() ?>
                     <button type="submit">Deconnexion</button>
                 </form>
             </div>

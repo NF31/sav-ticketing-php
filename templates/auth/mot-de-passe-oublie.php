@@ -6,6 +6,7 @@
     <?php endif; ?>
     <p>Saisissez l'email de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.</p>
     <form action="/mot-de-passe-oublie" method="post">
+        <?= csrf_champ() ?>
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required autofocus>
 

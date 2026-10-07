@@ -60,6 +60,16 @@ final class Router
                 $params[$name] = $matches[$name];
             }
 
+            // Verifie ici, une seule fois pour toutes les routes POST, plutot
+            // que dans chaque controleur : une nouvelle route ne peut pas
+            // oublier la verification.
+            if ($request->method === 'POST' && !Csrf::valide($_POST[Csrf::CHAMP] ?? null)) {
+                http_response_code(419);
+                echo 'Session expiree ou formulaire invalide. <a href="' . e($request->path) . '">Recharger la page</a>.';
+
+                return;
+            }
+
             if ($route['requiresAuth'] && !$authService->check()) {
                 Session::flash('error', 'Merci de vous connecter.');
                 header('Location: /login');

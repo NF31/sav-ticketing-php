@@ -28,6 +28,7 @@ final class Auth
         // fixation de session (un attaquant qui aurait fixe un session id
         // avant le login ne recupere pas une session desormais authentifiee).
         Session::regenerate();
+        Csrf::regenerer();
         Session::set(self::SESSION_KEY, $user->id);
 
         return true;
