@@ -53,6 +53,16 @@ final class UserRepository
         return array_map(User::fromRow(...), $stmt->fetchAll());
     }
 
+    /** Uniquement un compte de role technicien : un admin n'est pas assignable a un ticket. */
+    public function findTechnicien(int $id): ?User
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = :id AND role = 'technicien' LIMIT 1");
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+
+        return $row !== false ? User::fromRow($row) : null;
+    }
+
     /** @return list<User> */
     public function findAll(): array
     {
