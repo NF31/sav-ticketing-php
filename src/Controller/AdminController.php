@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Core\Database;
 use App\Core\Request;
 use App\Core\Session;
 use App\Core\View;
 use App\Enum\Poste;
-use App\Enum\Role;
 use App\Repository\UserRepository;
+use App\Validation\MotDePasse;
+use App\Validation\TechnicienValidator;
 
 final class AdminController
 {
@@ -25,37 +25,46 @@ final class AdminController
     {
         View::render('admin/techniciens', [
             'utilisateurs' => $this->users->findAll(),
-            'error' => Session::pullFlash('error'),
+            'postes' => Poste::cases(),
+            'erreurs' => Session::pullFlashDonnees('erreurs'),
+            'anciennes' => Session::pullFlashDonnees('anciennes'),
+            'success' => Session::pullFlash('success'),
+            'longueurMaxNom' => TechnicienValidator::LONGUEUR_MAX_NOM,
+            'longueurMaxEmail' => TechnicienValidator::LONGUEUR_MAX_EMAIL,
+            'longueurMinMotDePasse' => MotDePasse::LONGUEUR_MIN,
         ]);
     }
 
     public function creerTechnicien(Request $request): void
     {
-        $nom = $request->input('nom');
-        $prenom = $request->input('prenom');
-        $email = $request->input('email');
-        $password = $request->input('password');
-        $poste = Poste::tryFrom($request->input('poste'));
+        $donnees = TechnicienValidator::normaliser($_POST);
+        $erreurs = TechnicienValidator::valider($donnees, $this->users->emailExiste(...));
 
-        if ($nom === '' || $prenom === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || $poste === null) {
-            Session::flash('error', 'Champs invalides (mot de passe : 8 caracteres minimum).');
-            header('Location: /admin/techniciens');
+        if ($erreurs === []) {
+            $id = $this->users->creerTechnicien(
+                $donnees['nom'],
+                $donnees['prenom'],
+                $donnees['email'],
+                $donnees['password'],
+                Poste::from($donnees['poste']),
+            );
 
-            return;
+            if ($id !== null) {
+                Session::flash('success', "Technicien {$donnees['prenom']} {$donnees['nom']} cree.");
+                header('Location: /admin/techniciens');
+
+                return;
+            }
+
+            // Email pris entre la verification et l'INSERT (creation simultanee).
+            $erreurs['email'] = 'Un compte existe deja avec cet email.';
         }
 
-        $stmt = Database::connection()->prepare(
-            'INSERT INTO users (nom, prenom, email, password_hash, role, poste) VALUES (:nom, :prenom, :email, :hash, :role, :poste)'
-        );
-        $stmt->execute([
-            'nom' => $nom,
-            'prenom' => $prenom,
-            'email' => $email,
-            'hash' => password_hash($password, PASSWORD_BCRYPT),
-            'role' => Role::Technicien->value,
-            'poste' => $poste->value,
-        ]);
-
+        // Valeurs saisies renvoyees au formulaire, sauf les mots de passe :
+        // ils ne doivent ni rester en session ni revenir dans le HTML.
+        unset($donnees['password'], $donnees['password_confirmation']);
+        Session::flashDonnees('erreurs', $erreurs);
+        Session::flashDonnees('anciennes', $donnees);
         header('Location: /admin/techniciens');
     }
 }

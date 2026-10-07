@@ -12,11 +12,10 @@ use App\Core\Session;
 use App\Core\View;
 use App\Repository\PasswordResetRepository;
 use App\Repository\UserRepository;
+use App\Validation\MotDePasse;
 
 final class PasswordResetController
 {
-    private const int LONGUEUR_MIN_MOT_DE_PASSE = 8;
-
     // Par email : empeche d'inonder la boite d'une victime de liens.
     private const int MAX_DEMANDES_PAR_EMAIL = 3;
     // Par IP : empeche un meme poste de balayer une liste d'emails.
@@ -120,7 +119,7 @@ final class PasswordResetController
 
         View::render('auth/reinitialiser-mot-de-passe', [
             'jeton' => $jeton,
-            'longueurMin' => self::LONGUEUR_MIN_MOT_DE_PASSE,
+            'longueurMin' => MotDePasse::LONGUEUR_MIN,
             'error' => Session::pullFlash('error'),
         ]);
     }
@@ -132,11 +131,8 @@ final class PasswordResetController
         $motDePasse = (string) ($_POST['password'] ?? '');
         $confirmation = (string) ($_POST['password_confirmation'] ?? '');
 
-        $erreur = match (true) {
-            strlen($motDePasse) < self::LONGUEUR_MIN_MOT_DE_PASSE => 'Le mot de passe doit contenir au moins ' . self::LONGUEUR_MIN_MOT_DE_PASSE . ' caracteres.',
-            $motDePasse !== $confirmation => 'Les deux mots de passe ne correspondent pas.',
-            default => null,
-        };
+        $erreur = MotDePasse::erreur($motDePasse)
+            ?? ($motDePasse !== $confirmation ? 'Les deux mots de passe ne correspondent pas.' : null);
 
         if ($erreur !== null) {
             Session::flash('error', $erreur);
