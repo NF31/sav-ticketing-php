@@ -46,7 +46,10 @@ final class Session
 
     public static function regenerate(): void
     {
-        session_regenerate_id(true);
+        // Sans session active (ex. tests en CLI), rien a regenerer.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
     }
 
     public static function destroy(): void

@@ -31,8 +31,9 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 | Tables `administrateur` et `techniciens` dupliquees | Table `users` unique avec `role` (enum natif PHP) |
 | Aucun suivi des changements de statut | Table `ticket_historique`, alimentee dans une transaction |
 | Statut modifiable vers n'importe quelle valeur | Machine a etats : transitions autorisees definies par statut |
+| Tentatives de connexion illimitees | 5 echecs / 15 min par compte et IP, 20 par IP (429 au-dela) ; temps de reponse identique que l'email existe ou non |
 | Aucune protection CSRF | Jeton CSRF par session sur tous les formulaires, verifie par le routeur sur toute requete POST (419 sinon) |
-| Aucune recuperation de mot de passe | "Mot de passe oublie" : lien a usage unique, valable 1 h, jeton stocke hashe (SHA-256) |
+| Aucune recuperation de mot de passe | "Mot de passe oublie" : lien a usage unique, valable 1 h, jeton stocke hashe (SHA-256) ; changer de mot de passe deconnecte les sessions deja ouvertes |
 
 ## Stack
 
