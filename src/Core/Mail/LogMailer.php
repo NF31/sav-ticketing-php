@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Mail;
 
 /**
- * Mailer de dev (MAIL_DRIVER=log) : les emails sont ecrits dans
+ * Mailer de dev (MAIL_MAILER=log) : les emails sont ecrits dans
  * var/mail.log au lieu d'etre envoyes, pour recuperer un lien de
  * reinitialisation sans compte chez un fournisseur.
  */
