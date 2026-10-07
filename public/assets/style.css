@@ -91,6 +91,8 @@ dd { margin: 0; }
 .alert { padding: 0.6rem 0.9rem; border-radius: 6px; margin-bottom: 1rem; }
 .alert-error { background: #fee2e2; color: #991b1b; }
 .alert-success { background: #dcfce7; color: #166534; }
+.field-error { color: #991b1b; font-size: 0.8rem; margin: 0; }
+input[aria-invalid="true"], select[aria-invalid="true"] { border-color: #dc2626; }
 
 @media (max-width: 700px) {
     .grid-2 { grid-template-columns: 1fr; }

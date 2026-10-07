@@ -33,6 +33,7 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 | Statut modifiable vers n'importe quelle valeur | Machine a etats : transitions autorisees definies par statut |
 | Tentatives de connexion illimitees | 5 echecs / 15 min par compte et IP, 20 par IP (429 au-dela) ; temps de reponse identique que l'email existe ou non |
 | Aucun en-tete de securite, session par defaut | CSP stricte, anti-iframe (clickjacking), `Referrer-Policy`, HSTS en HTTPS ; session en `use_strict_mode`, cookie `Secure` en HTTPS |
+| Formulaire technicien valide par une seule condition, email en double ou champ trop long = erreur 500 | Validation par champ (format des noms, longueurs alignees sur la base, email unique, mot de passe 8 caracteres a 72 octets avec confirmation), message sous chaque champ, saisie conservee |
 | Aucune protection CSRF | Jeton CSRF par session sur tous les formulaires, verifie par le routeur sur toute requete POST (419 sinon) |
 | Aucune recuperation de mot de passe | "Mot de passe oublie" : lien a usage unique, valable 1 h, jeton stocke hashe (SHA-256) ; changer de mot de passe deconnecte les sessions deja ouvertes |
 
