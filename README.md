@@ -38,6 +38,10 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 - PDO / MySQL (MariaDB en dev), uniquement des requetes preparees
 - `enum` natifs pour les statuts/roles/types (pas de "magic strings")
 - Proprietes `readonly` pour les entites (DTO immutables)
+- Nouveautes PHP 8.5 dans `Request` : extension URI native
+  (`Uri\Rfc3986\Uri`, conforme RFC 3986, a la place de `parse_url()`),
+  operateur pipe `|>`, `clone()` avec proprietes modifiees, et
+  `#[\NoDiscard]` sur `withRouteParams()`
 - PHPUnit (tests unitaires sur la machine a etats + tests d'integration
   sur les repositories, contre une vraie base)
 
