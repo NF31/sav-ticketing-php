@@ -78,8 +78,12 @@ reinitialisation) est ecrit dans `var/mail.log`. Le domaine du lien
 vient de `APP_URL` dans `.env`, jamais de l'en-tete `Host` de la requete
 (qui est falsifiable).
 
-Base creee avant l'ajout de cette fonctionnalite : creer la table
-manquante avec
+Demandes limitees a 3 par heure et par email (au-dela, meme message
+affiche mais aucun email envoye, pour ne pas reveler que le compte
+existe) et a 10 par heure et par IP (au-dela, erreur 429).
+
+Base creee avant l'ajout de cette fonctionnalite : creer les tables
+manquantes (`password_resets`, `tentatives`) avec
 
 ```bash
 sed -n '/CREATE TABLE password_resets/,$p' database/schema.sql \

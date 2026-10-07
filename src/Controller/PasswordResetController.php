@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Core\Env;
 use App\Core\Mailer;
+use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\Session;
 use App\Core\View;
@@ -15,6 +16,12 @@ use App\Repository\UserRepository;
 final class PasswordResetController
 {
     private const int LONGUEUR_MIN_MOT_DE_PASSE = 8;
+
+    // Par email : empeche d'inonder la boite d'une victime de liens.
+    private const int MAX_DEMANDES_PAR_EMAIL = 3;
+    // Par IP : empeche un meme poste de balayer une liste d'emails.
+    private const int MAX_DEMANDES_PAR_IP = 10;
+    private const int FENETRE_LIMITE_MINUTES = 60;
 
     /**
      * Message identique que l'email existe ou non : sinon le formulaire
@@ -26,12 +33,14 @@ final class PasswordResetController
     private UserRepository $users;
     private PasswordResetRepository $resets;
     private Mailer $mailer;
+    private RateLimiter $limiter;
 
     public function __construct()
     {
         $this->users = new UserRepository();
         $this->resets = new PasswordResetRepository();
         $this->mailer = new Mailer();
+        $this->limiter = new RateLimiter();
     }
 
     public function showDemande(Request $request): void
@@ -50,9 +59,33 @@ final class PasswordResetController
             return;
         }
 
+        $cleIp = 'reset:ip:' . $request->ip();
+
+        if ($this->limiter->tropDeTentatives($cleIp, self::MAX_DEMANDES_PAR_IP, self::FENETRE_LIMITE_MINUTES)) {
+            // Rendu direct plutot qu'une redirection : header('Location')
+            // remplacerait le statut 429 par un 302.
+            http_response_code(429);
+            View::render('auth/mot-de-passe-oublie', [
+                'error' => 'Trop de demandes depuis votre connexion. Reessayez dans une heure.',
+            ]);
+
+            return;
+        }
+
+        // Email hashe dans la cle : la table tentatives ne conserve pas
+        // d'adresses en clair.
+        $cleEmail = 'reset:email:' . hash('sha256', strtolower($email));
+        $limiteEmailAtteinte = $this->limiter->tropDeTentatives($cleEmail, self::MAX_DEMANDES_PAR_EMAIL, self::FENETRE_LIMITE_MINUTES);
+
+        $this->limiter->enregistrer($cleIp);
+        $this->limiter->enregistrer($cleEmail);
+
         $user = $this->users->findByEmail($email);
 
-        if ($user !== null) {
+        // Limite par email atteinte : on n'envoie rien, mais on affiche le
+        // meme message que d'habitude. Un message different revelerait
+        // que des demandes ont deja ete faites, donc que le compte existe.
+        if ($user !== null && !$limiteEmailAtteinte) {
             $jeton = $this->resets->creerJeton($user->id);
 
             // URL de base lue dans la config, jamais dans l'en-tete Host de la
