@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\ApresReponse;
 use App\Core\Env;
-use App\Core\Mailer;
+use App\Core\Mail\Mailer;
+use App\Core\Mail\MailerFactory;
 use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\Session;
@@ -38,7 +40,7 @@ final class PasswordResetController
     {
         $this->users = new UserRepository();
         $this->resets = new PasswordResetRepository();
-        $this->mailer = new Mailer();
+        $this->mailer = MailerFactory::depuisEnv();
         $this->limiter = new RateLimiter();
     }
 
@@ -85,21 +87,25 @@ final class PasswordResetController
         // meme message que d'habitude. Un message different revelerait
         // que des demandes ont deja ete faites, donc que le compte existe.
         if ($user !== null && !$limiteEmailAtteinte) {
-            $jeton = $this->resets->creerJeton($user->id);
+            // Creation du jeton et envoi apres la reponse : la requete prend
+            // alors le meme temps que le compte existe ou non (voir ApresReponse).
+            ApresReponse::ajouter(function () use ($user): void {
+                $jeton = $this->resets->creerJeton($user->id);
 
-            // URL de base lue dans la config, jamais dans l'en-tete Host de la
-            // requete : un attaquant pourrait sinon forger un Host pointant vers
-            // son domaine et recevoir le jeton quand la victime clique le lien.
-            $lien = rtrim(Env::get('APP_URL', 'http://localhost:8090'), '/') . '/mot-de-passe/reinitialiser/' . $jeton;
+                // URL de base lue dans la config, jamais dans l'en-tete Host de la
+                // requete : un attaquant pourrait sinon forger un Host pointant vers
+                // son domaine et recevoir le jeton quand la victime clique le lien.
+                $lien = rtrim(Env::get('APP_URL', 'http://localhost:8090'), '/') . '/mot-de-passe/reinitialiser/' . $jeton;
 
-            $this->mailer->send(
-                $user->email,
-                'Reinitialisation de votre mot de passe',
-                "Bonjour {$user->prenom},\n\n"
-                . "Pour choisir un nouveau mot de passe, ouvrez ce lien :\n{$lien}\n\n"
-                . 'Il est valable ' . PasswordResetRepository::DUREE_VALIDITE_MINUTES . " minutes et ne peut servir qu'une fois.\n"
-                . "Si vous n'etes pas a l'origine de cette demande, ignorez cet email.",
-            );
+                $this->mailer->send(
+                    $user->email,
+                    'Reinitialisation de votre mot de passe',
+                    "Bonjour {$user->prenom},\n\n"
+                    . "Pour choisir un nouveau mot de passe, ouvrez ce lien :\n{$lien}\n\n"
+                    . 'Il est valable ' . PasswordResetRepository::DUREE_VALIDITE_MINUTES . " minutes et ne peut servir qu'une fois.\n"
+                    . "Si vous n'etes pas a l'origine de cette demande, ignorez cet email.",
+                );
+            });
         }
 
         Session::flash('success', self::MESSAGE_DEMANDE_ENVOYEE);

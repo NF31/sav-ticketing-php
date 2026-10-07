@@ -48,6 +48,8 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
   (`Uri\Rfc3986\Uri`, conforme RFC 3986, a la place de `parse_url()`),
   operateur pipe `|>`, `clone()` avec proprietes modifiees, et
   `#[\NoDiscard]` sur `withRouteParams()`
+- Envoi d'emails via l'API HTTP de Resend avec l'extension curl, sans
+  SDK (meme requete que `resend/resend-php`, sans Guzzle)
 - PHPUnit (tests unitaires sur la machine a etats + tests d'integration
   sur les repositories, contre une vraie base)
 
@@ -67,6 +69,9 @@ docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < databas
 docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/seed.sql
 
 composer serve   # http://localhost:8090
+# equivalent : PHP_CLI_SERVER_WORKERS=4 php -S localhost:8090 -t public
+# (4 workers : le serveur integre de PHP ne traite sinon qu'une requete a
+# la fois, et l'envoi d'un email bloquerait la page suivante ~0,5 s)
 ```
 
 Comptes de demo (mot de passe `password` pour tous) :
@@ -77,11 +82,40 @@ Comptes de demo (mot de passe `password` pour tous) :
 
 ### Mot de passe oublie
 
-Lien "Mot de passe oublie ?" sous le formulaire de connexion. Aucun
-serveur SMTP n'est configure : l'email (avec le lien de
-reinitialisation) est ecrit dans `var/mail.log`. Le domaine du lien
-vient de `APP_URL` dans `.env`, jamais de l'en-tete `Host` de la requete
-(qui est falsifiable).
+Lien "Mot de passe oublie ?" sous le formulaire de connexion. Le domaine
+du lien envoye vient de `APP_URL` dans `.env`, jamais de l'en-tete
+`Host` de la requete (qui est falsifiable).
+
+### Envoi des emails
+
+Choisi par `MAIL_MAILER` dans `.env` (memes noms de variables que
+Laravel) :
+
+- `log` (defaut) : rien n'est envoye, l'email est ecrit dans
+  `var/mail.log`. Aucun compte necessaire.
+- `resend` : envoi reel via l'API HTTP de [Resend](https://resend.com),
+  appelee directement avec curl (sans SDK ni dependance). Renseigner
+  `RESEND_API_KEY` (cle creee sur https://resend.com/api-keys),
+  `MAIL_FROM_ADDRESS` et `MAIL_FROM_NAME`. Avec `onboarding@resend.dev`
+  (aucun domaine a configurer), Resend n'envoie qu'a l'adresse du compte
+  Resend proprietaire de la cle : suffisant pour tester. Pour ecrire a
+  n'importe quel utilisateur, verifier un domaine sur
+  https://resend.com/domains (enregistrements DNS) et utiliser une
+  adresse de ce domaine.
+
+```dotenv
+MAIL_MAILER=resend
+MAIL_FROM_ADDRESS=onboarding@resend.dev
+MAIL_FROM_NAME="SAV Ticketing"
+RESEND_API_KEY=re_...
+```
+
+L'email est envoye **apres** la reponse au navigateur
+(`ApresReponse`) : un appel a Resend prend ~0,5 s, et sur "mot de passe
+oublie" il n'a lieu que si le compte existe ; fait pendant la requete,
+il rendrait le temps de reponse revelateur. Un envoi echoue est
+journalise (statut et message de Resend, jamais la cle ni le
+destinataire) dans le log d'erreurs PHP.
 
 Demandes limitees a 3 par heure et par email (au-dela, meme message
 affiche mais aucun email envoye, pour ne pas reveler que le compte
