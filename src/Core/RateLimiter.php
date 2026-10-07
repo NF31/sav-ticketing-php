@@ -39,4 +39,10 @@ final class RateLimiter
         // dans l'application ne depasse 24 h.
         $this->pdo->exec('DELETE FROM tentatives WHERE created_at < NOW() - INTERVAL 1 DAY');
     }
+
+    /** Remet le compteur a zero, ex. apres une connexion reussie. */
+    public function effacer(string $cle): void
+    {
+        $this->pdo->prepare('DELETE FROM tentatives WHERE cle = :cle')->execute(['cle' => $cle]);
+    }
 }
