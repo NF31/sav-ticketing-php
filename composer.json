@@ -24,9 +24,15 @@
     },
     "scripts": {
         "test": "phpunit",
-        "serve": "php -S localhost:8090 -t public"
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "PHP_CLI_SERVER_WORKERS=4 php -S localhost:8090 -t public"
+        ]
     },
     "config": {
         "sort-packages": true
+    },
+    "scripts-descriptions": {
+        "serve": "Serveur de dev sur http://localhost:8090 (4 workers, sans limite de duree)"
     }
 }
