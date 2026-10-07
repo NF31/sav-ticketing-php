@@ -96,3 +96,14 @@ CREATE TABLE password_resets (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_resets_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Limitation de debit generique (ex. demandes de reinitialisation de mot
+-- de passe) : une ligne par tentative, comptee sur une fenetre glissante.
+-- En base plutot que dans un cache (Redis...) faute d'en avoir un dans ce
+-- projet ; la cle identifie l'action et le sujet (email hashe, IP).
+CREATE TABLE tentatives (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cle VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_tentatives_cle_date (cle, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
