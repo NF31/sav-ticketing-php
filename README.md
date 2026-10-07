@@ -31,6 +31,10 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 | Tables `administrateur` et `techniciens` dupliquees | Table `users` unique avec `role` (enum natif PHP) |
 | Aucun suivi des changements de statut | Table `ticket_historique`, alimentee dans une transaction |
 | Statut modifiable vers n'importe quelle valeur | Machine a etats : transitions autorisees definies par statut |
+| Tentatives de connexion illimitees | 5 echecs / 15 min par compte et IP, 20 par IP (429 au-dela) ; temps de reponse identique que l'email existe ou non |
+| Aucun en-tete de securite, session par defaut | CSP stricte, anti-iframe (clickjacking), `Referrer-Policy`, HSTS en HTTPS ; session en `use_strict_mode`, cookie `Secure` en HTTPS |
+| Aucune protection CSRF | Jeton CSRF par session sur tous les formulaires, verifie par le routeur sur toute requete POST (419 sinon) |
+| Aucune recuperation de mot de passe | "Mot de passe oublie" : lien a usage unique, valable 1 h, jeton stocke hashe (SHA-256) ; changer de mot de passe deconnecte les sessions deja ouvertes |
 
 ## Stack
 
@@ -68,6 +72,26 @@ Comptes de demo (mot de passe `password` pour tous) :
 - `admin@sav.local` — administrateur
 - `karim.diallo@sav.local` — technicien SAV
 - `lea.nguyen@sav.local` — technicien hotline
+
+### Mot de passe oublie
+
+Lien "Mot de passe oublie ?" sous le formulaire de connexion. Aucun
+serveur SMTP n'est configure : l'email (avec le lien de
+reinitialisation) est ecrit dans `var/mail.log`. Le domaine du lien
+vient de `APP_URL` dans `.env`, jamais de l'en-tete `Host` de la requete
+(qui est falsifiable).
+
+Demandes limitees a 3 par heure et par email (au-dela, meme message
+affiche mais aucun email envoye, pour ne pas reveler que le compte
+existe) et a 10 par heure et par IP (au-dela, erreur 429).
+
+Base creee avant l'ajout de cette fonctionnalite : creer les tables
+manquantes (`password_resets`, `tentatives`) avec
+
+```bash
+sed -n '/CREATE TABLE password_resets/,$p' database/schema.sql \
+  | docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing
+```
 
 ## Tests
 
