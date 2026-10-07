@@ -48,6 +48,8 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
   (`Uri\Rfc3986\Uri`, conforme RFC 3986, a la place de `parse_url()`),
   operateur pipe `|>`, `clone()` avec proprietes modifiees, et
   `#[\NoDiscard]` sur `withRouteParams()`
+- Envoi d'emails via l'API HTTP de Resend avec l'extension curl, sans
+  SDK (meme requete que `resend/resend-php`, sans Guzzle)
 - PHPUnit (tests unitaires sur la machine a etats + tests d'integration
   sur les repositories, contre une vraie base)
 
@@ -77,11 +79,30 @@ Comptes de demo (mot de passe `password` pour tous) :
 
 ### Mot de passe oublie
 
-Lien "Mot de passe oublie ?" sous le formulaire de connexion. Aucun
-serveur SMTP n'est configure : l'email (avec le lien de
-reinitialisation) est ecrit dans `var/mail.log`. Le domaine du lien
-vient de `APP_URL` dans `.env`, jamais de l'en-tete `Host` de la requete
-(qui est falsifiable).
+Lien "Mot de passe oublie ?" sous le formulaire de connexion. Le domaine
+du lien envoye vient de `APP_URL` dans `.env`, jamais de l'en-tete
+`Host` de la requete (qui est falsifiable).
+
+### Envoi des emails
+
+Choisi par `MAIL_DRIVER` dans `.env` :
+
+- `log` (defaut) : rien n'est envoye, l'email est ecrit dans
+  `var/mail.log`. Aucun compte necessaire.
+- `resend` : envoi reel via l'API HTTP de [Resend](https://resend.com),
+  appelee directement avec curl (sans SDK ni dependance). Renseigner
+  `RESEND_API_KEY` (cle creee sur https://resend.com/api-keys) et
+  `MAIL_FROM`. Sans domaine verifie chez Resend, seul l'expediteur
+  `onboarding@resend.dev` est accepte, et uniquement vers l'adresse du
+  compte Resend ; pour ecrire a n'importe qui, verifier son domaine
+  (enregistrements DNS) puis mettre `MAIL_FROM=SAV <sav@mondomaine.fr>`.
+
+L'email est envoye **apres** la reponse au navigateur
+(`ApresReponse`) : un appel a Resend prend ~0,5 s, et sur "mot de passe
+oublie" il n'a lieu que si le compte existe ; fait pendant la requete,
+il rendrait le temps de reponse revelateur. Un envoi echoue est
+journalise (statut et message de Resend, jamais la cle ni le
+destinataire) dans le log d'erreurs PHP.
 
 Demandes limitees a 3 par heure et par email (au-dela, meme message
 affiche mais aucun email envoye, pour ne pas reveler que le compte
