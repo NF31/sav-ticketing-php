@@ -6,6 +6,7 @@ use App\Controller\AdminController;
 use App\Controller\ArticleController;
 use App\Controller\AuthController;
 use App\Controller\ClientController;
+use App\Controller\PasswordResetController;
 use App\Controller\TicketController;
 use App\Core\Auth;
 use App\Core\Env;
@@ -24,6 +25,10 @@ $router->get('/', [AuthController::class, 'showLogin']);
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
 $router->post('/logout', [AuthController::class, 'logout']);
+$router->get('/mot-de-passe-oublie', [PasswordResetController::class, 'showDemande']);
+$router->post('/mot-de-passe-oublie', [PasswordResetController::class, 'envoyerLien']);
+$router->get('/mot-de-passe/reinitialiser/{token}', [PasswordResetController::class, 'showReinitialisation']);
+$router->post('/mot-de-passe/reinitialiser/{token}', [PasswordResetController::class, 'reinitialiser']);
 
 $router->get('/tickets', [TicketController::class, 'index'], auth: true);
 $router->get('/tickets/create', [TicketController::class, 'create'], auth: true);
