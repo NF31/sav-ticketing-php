@@ -56,6 +56,26 @@ final class Session
         return $message;
     }
 
+    /**
+     * Comme flash(), pour un tableau (erreurs par champ, valeurs saisies a
+     * reafficher apres une redirection).
+     *
+     * @param array<string, string> $donnees
+     */
+    public static function flashDonnees(string $key, array $donnees): void
+    {
+        $_SESSION['_flash_donnees'][$key] = $donnees;
+    }
+
+    /** @return array<string, string> */
+    public static function pullFlashDonnees(string $key): array
+    {
+        $donnees = $_SESSION['_flash_donnees'][$key] ?? [];
+        unset($_SESSION['_flash_donnees'][$key]);
+
+        return is_array($donnees) ? $donnees : [];
+    }
+
     public static function regenerate(): void
     {
         // Sans session active (ex. tests en CLI), rien a regenerer.

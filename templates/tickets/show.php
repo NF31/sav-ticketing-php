@@ -4,6 +4,7 @@
 /** @var list<\App\Entity\User> $techniciens */
 /** @var list<\App\Enum\TicketStatut> $transitions */
 /** @var ?string $error */
+/** @var ?string $success */
 ?>
 <div class="page-header">
     <h1>Ticket <?= e($ticket->code) ?></h1>
@@ -12,6 +13,9 @@
 
 <?php if ($error): ?>
     <p class="alert alert-error"><?= e($error) ?></p>
+<?php endif; ?>
+<?php if ($success): ?>
+    <p class="alert alert-success"><?= e($success) ?></p>
 <?php endif; ?>
 
 <div class="grid-2">
@@ -41,18 +45,25 @@
             <p class="hint">Aucune transition possible depuis ce statut.</p>
         <?php endif; ?>
 
-        <form action="/tickets/<?= $ticket->id ?>/assigner" method="post" class="inline-form">
-            <?= csrf_champ() ?>
-            <label for="technicien_id">Assigner un technicien</label>
-            <select name="technicien_id" id="technicien_id">
-                <?php foreach ($techniciens as $tech): ?>
-                    <option value="<?= $tech->id ?>" <?= $tech->id === $ticket->technicienId ? 'selected' : '' ?>>
-                        <?= e($tech->nomComplet()) ?> (<?= e($tech->poste?->label() ?? '') ?>)
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit">Assigner</button>
-        </form>
+        <?php if ($ticket->statut === \App\Enum\TicketStatut::Termine): ?>
+            <p class="hint">Ticket termine : il ne peut plus etre reassigne.</p>
+        <?php else: ?>
+            <form action="/tickets/<?= $ticket->id ?>/assigner" method="post" class="inline-form">
+                <?= csrf_champ() ?>
+                <label for="technicien_id">Assigner un technicien</label>
+                <select name="technicien_id" id="technicien_id" required>
+                    <?php if ($ticket->technicienId === null): ?>
+                        <option value="">-- Choisir --</option>
+                    <?php endif; ?>
+                    <?php foreach ($techniciens as $tech): ?>
+                        <option value="<?= $tech->id ?>" <?= $tech->id === $ticket->technicienId ? 'selected' : '' ?>>
+                            <?= e($tech->nomComplet()) ?> (<?= e($tech->poste?->label() ?? '') ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit">Assigner</button>
+            </form>
+        <?php endif; ?>
     </div>
 
     <div class="card">

@@ -29,6 +29,14 @@ final class CommandeRepository
         return $stmt->fetchAll();
     }
 
+    public function existe(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT 1 FROM commandes WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
     public function create(int $clientId, string $dateCommande): int
     {
         $stmt = $this->pdo->prepare('INSERT INTO commandes (client_id, date_commande) VALUES (:client_id, :date)');
