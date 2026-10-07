@@ -81,3 +81,29 @@ CREATE TABLE ticket_historique (
     CONSTRAINT fk_hist_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (id) ON DELETE CASCADE,
     CONSTRAINT fk_hist_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Ajout par rapport a l'original (aucune recuperation de mot de passe) :
+-- jetons de reinitialisation. Seul le hash SHA-256 du jeton est stocke,
+-- jamais le jeton lui-meme : une fuite de la table ne permet pas de
+-- reinitialiser un compte. Jeton a usage unique (used_at) et a duree
+-- limitee (expires_at).
+CREATE TABLE password_resets (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_resets_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Limitation de debit generique (ex. demandes de reinitialisation de mot
+-- de passe) : une ligne par tentative, comptee sur une fenetre glissante.
+-- En base plutot que dans un cache (Redis...) faute d'en avoir un dans ce
+-- projet ; la cle identifie l'action et le sujet (email hashe, IP).
+CREATE TABLE tentatives (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cle VARCHAR(100) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_tentatives_cle_date (cle, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

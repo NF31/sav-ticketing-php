@@ -54,6 +54,17 @@ final class Request
         return $this->routeParams[$key] ?? '';
     }
 
+    /**
+     * IP de la connexion (REMOTE_ADDR), jamais X-Forwarded-For : cet
+     * en-tete est fourni par le client, qui pourrait le changer a chaque
+     * requete pour contourner une limitation par IP. Derriere un reverse
+     * proxy, il faudrait le lire uniquement si REMOTE_ADDR est ce proxy.
+     */
+    public function ip(): string
+    {
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    }
+
     public function input(string $key, string $default = ''): string
     {
         return trim((string) ($_POST[$key] ?? $default));

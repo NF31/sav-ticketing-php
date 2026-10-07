@@ -9,6 +9,7 @@
         <p class="alert alert-error"><?= e($error) ?></p>
     <?php endif; ?>
     <form action="/tickets" method="post">
+        <?= csrf_champ() ?>
         <label for="commande_id">Commande concernee</label>
         <select name="commande_id" id="commande_id" required>
             <option value="">-- Choisir --</option>

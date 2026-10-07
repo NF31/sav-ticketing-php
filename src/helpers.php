@@ -13,3 +13,12 @@ function e(?string $value): string
 {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
+
+/**
+ * Champ cache du jeton CSRF, a placer dans chaque formulaire POST : le
+ * Router refuse toute requete POST sans jeton valide.
+ */
+function csrf_champ(): string
+{
+    return '<input type="hidden" name="' . \App\Core\Csrf::CHAMP . '" value="' . e(\App\Core\Csrf::jeton()) . '">';
+}
