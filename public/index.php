@@ -12,11 +12,13 @@ use App\Core\Auth;
 use App\Core\Env;
 use App\Core\Request;
 use App\Core\Router;
+use App\Core\SecurityHeaders;
 use App\Core\Session;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 Env::load(__DIR__ . '/../.env');
+SecurityHeaders::envoyer();
 Session::start();
 
 $router = new Router();
