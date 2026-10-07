@@ -8,6 +8,7 @@ use App\Controller\AuthController;
 use App\Controller\ClientController;
 use App\Controller\PasswordResetController;
 use App\Controller\TicketController;
+use App\Core\ApresReponse;
 use App\Core\Auth;
 use App\Core\Env;
 use App\Core\Request;
@@ -16,6 +17,10 @@ use App\Core\SecurityHeaders;
 use App\Core\Session;
 
 require __DIR__ . '/../vendor/autoload.php';
+
+// Toute la sortie est retenue jusqu'a ApresReponse::terminer(), qui peut
+// ainsi envoyer la reponse complete avant d'executer les taches differees.
+ob_start();
 
 Env::load(__DIR__ . '/../.env');
 SecurityHeaders::envoyer();
@@ -49,3 +54,4 @@ $router->get('/admin/techniciens', [AdminController::class, 'techniciens'], auth
 $router->post('/admin/techniciens', [AdminController::class, 'creerTechnicien'], auth: true, admin: true);
 
 $router->dispatch(Request::fromGlobals(), new Auth());
+ApresReponse::terminer();
