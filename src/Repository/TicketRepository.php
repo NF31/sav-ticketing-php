@@ -70,27 +70,52 @@ final class TicketRepository
         return array_map(Ticket::fromRow(...), $stmt->fetchAll());
     }
 
+    /**
+     * Le code (TCK-0042) est derive de l'id, donc unique et sequentiel
+     * comme ceux du seed. L'id n'etant connu qu'apres l'INSERT, le ticket
+     * est insere avec un code provisoire puis renomme, dans une transaction
+     * pour qu'aucun ticket ne reste avec son code provisoire.
+     * Le code tient dans tickets.code (VARCHAR(10)) jusqu'a l'id 999999 ;
+     * l'ancien code (TCK-0042-a1b2, 13 caracteres) n'y tenait jamais, d'ou
+     * une erreur 500 a chaque creation de ticket.
+     */
     public function create(
-        string $code,
         int $commandeId,
-        ?int $technicienId,
         TicketType $type,
         ?string $description,
     ): int {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO tickets (code, commande_id, technicien_id, type, statut, description)
-             VALUES (:code, :commande_id, :technicien_id, :type, :statut, :description)'
-        );
-        $stmt->execute([
-            'code' => $code,
-            'commande_id' => $commandeId,
-            'technicien_id' => $technicienId,
-            'type' => $type->value,
-            'statut' => TicketStatut::Nouveau->value,
-            'description' => $description,
-        ]);
+        $this->pdo->beginTransaction();
 
-        return (int) $this->pdo->lastInsertId();
+        try {
+            $insert = $this->pdo->prepare(
+                'INSERT INTO tickets (code, commande_id, type, statut, description)
+                 VALUES (:code, :commande_id, :type, :statut, :description)'
+            );
+            $insert->execute([
+                'code' => 'TMP-' . bin2hex(random_bytes(3)),
+                'commande_id' => $commandeId,
+                'type' => $type->value,
+                'statut' => TicketStatut::Nouveau->value,
+                'description' => $description,
+            ]);
+            $id = (int) $this->pdo->lastInsertId();
+
+            $this->pdo->prepare('UPDATE tickets SET code = :code WHERE id = :id')
+                ->execute(['code' => self::code($id), 'id' => $id]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+
+            throw $e;
+        }
+
+        return $id;
+    }
+
+    public static function code(int $id): string
+    {
+        return sprintf('TCK-%04d', $id);
     }
 
     /**
