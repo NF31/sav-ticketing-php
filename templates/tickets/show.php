@@ -28,6 +28,7 @@
 
         <?php if ($transitions !== []): ?>
             <form action="/tickets/<?= $ticket->id ?>/statut" method="post" class="inline-form">
+                <?= csrf_champ() ?>
                 <label for="statut">Changer le statut</label>
                 <select name="statut" id="statut">
                     <?php foreach ($transitions as $t): ?>
@@ -41,6 +42,7 @@
         <?php endif; ?>
 
         <form action="/tickets/<?= $ticket->id ?>/assigner" method="post" class="inline-form">
+            <?= csrf_champ() ?>
             <label for="technicien_id">Assigner un technicien</label>
             <select name="technicien_id" id="technicien_id">
                 <?php foreach ($techniciens as $tech): ?>

@@ -11,6 +11,7 @@
         <p class="alert alert-success"><?= e($success) ?></p>
     <?php endif; ?>
     <form action="/login" method="post">
+        <?= csrf_champ() ?>
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required autofocus>
 
