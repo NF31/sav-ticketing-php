@@ -1,5 +1,7 @@
 # SAV Ticketing (PHP natif)
 
+[![CI](https://github.com/NF31/sav-ticketing-php/actions/workflows/ci.yml/badge.svg)](https://github.com/NF31/sav-ticketing-php/actions/workflows/ci.yml)
+
 Application de gestion de tickets SAV (service apres-vente) : suivi de
 tickets rattaches a des commandes clients, assignation a des techniciens,
 workflow de statuts avec historique.
@@ -134,6 +136,12 @@ sed -n '/CREATE TABLE password_resets/,$p' database/schema.sql \
 ```bash
 composer test
 ```
+
+Lances aussi par GitHub Actions (`.github/workflows/ci.yml`) a chaque
+push sur `main` et sur chaque pull request : PHP 8.5, une MariaDB 11
+neuve avec le schema et le seed, puis `composer validate`, verification
+de la syntaxe de tous les fichiers PHP et `composer test`. Les emails y
+sont en `MAIL_MAILER=log` : aucun envoi reel, aucun secret necessaire.
 
 ## Ce qui manque encore (a faire evoluer)
 
