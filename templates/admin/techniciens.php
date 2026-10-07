@@ -9,10 +9,6 @@
 /** @var int $longueurMinMotDePasse */
 
 $ancienne = static fn (string $champ): string => e($anciennes[$champ] ?? '');
-$invalide = static fn (string $champ): string => isset($erreurs[$champ]) ? ' aria-invalid="true" aria-describedby="erreur-' . $champ . '"' : '';
-$erreur = static fn (string $champ): string => isset($erreurs[$champ])
-    ? '<p class="field-error" id="erreur-' . $champ . '">' . e($erreurs[$champ]) . '</p>'
-    : '';
 ?>
 <div class="page-header">
     <h1>Equipe</h1>
@@ -45,33 +41,33 @@ $erreur = static fn (string $champ): string => isset($erreurs[$champ])
     <form action="/admin/techniciens" method="post">
         <?= csrf_champ() ?>
         <label for="nom">Nom</label>
-        <input type="text" id="nom" name="nom" value="<?= $ancienne('nom') ?>" required maxlength="<?= $longueurMaxNom ?>" autocomplete="off"<?= $invalide('nom') ?>>
-        <?= $erreur('nom') ?>
+        <input type="text" id="nom" name="nom" value="<?= $ancienne('nom') ?>" required maxlength="<?= $longueurMaxNom ?>" autocomplete="off"<?= champ_invalide($erreurs, 'nom') ?>>
+        <?= champ_erreur($erreurs, 'nom') ?>
 
         <label for="prenom">Prenom</label>
-        <input type="text" id="prenom" name="prenom" value="<?= $ancienne('prenom') ?>" required maxlength="<?= $longueurMaxNom ?>" autocomplete="off"<?= $invalide('prenom') ?>>
-        <?= $erreur('prenom') ?>
+        <input type="text" id="prenom" name="prenom" value="<?= $ancienne('prenom') ?>" required maxlength="<?= $longueurMaxNom ?>" autocomplete="off"<?= champ_invalide($erreurs, 'prenom') ?>>
+        <?= champ_erreur($erreurs, 'prenom') ?>
 
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" value="<?= $ancienne('email') ?>" required maxlength="<?= $longueurMaxEmail ?>" autocomplete="off"<?= $invalide('email') ?>>
-        <?= $erreur('email') ?>
+        <input type="email" id="email" name="email" value="<?= $ancienne('email') ?>" required maxlength="<?= $longueurMaxEmail ?>" autocomplete="off"<?= champ_invalide($erreurs, 'email') ?>>
+        <?= champ_erreur($erreurs, 'email') ?>
 
         <label for="password">Mot de passe (<?= $longueurMinMotDePasse ?> caracteres min.)</label>
-        <input type="password" id="password" name="password" required minlength="<?= $longueurMinMotDePasse ?>" autocomplete="new-password"<?= $invalide('password') ?>>
-        <?= $erreur('password') ?>
+        <input type="password" id="password" name="password" required minlength="<?= $longueurMinMotDePasse ?>" autocomplete="new-password"<?= champ_invalide($erreurs, 'password') ?>>
+        <?= champ_erreur($erreurs, 'password') ?>
 
         <label for="password_confirmation">Confirmer le mot de passe</label>
-        <input type="password" id="password_confirmation" name="password_confirmation" required minlength="<?= $longueurMinMotDePasse ?>" autocomplete="new-password"<?= $invalide('password_confirmation') ?>>
-        <?= $erreur('password_confirmation') ?>
+        <input type="password" id="password_confirmation" name="password_confirmation" required minlength="<?= $longueurMinMotDePasse ?>" autocomplete="new-password"<?= champ_invalide($erreurs, 'password_confirmation') ?>>
+        <?= champ_erreur($erreurs, 'password_confirmation') ?>
 
         <label for="poste">Poste</label>
-        <select name="poste" id="poste" required<?= $invalide('poste') ?>>
+        <select name="poste" id="poste" required<?= champ_invalide($erreurs, 'poste') ?>>
             <option value="">Choisir un poste</option>
             <?php foreach ($postes as $poste): ?>
                 <option value="<?= e($poste->value) ?>"<?= ($anciennes['poste'] ?? '') === $poste->value ? ' selected' : '' ?>><?= e($poste->label()) ?></option>
             <?php endforeach; ?>
         </select>
-        <?= $erreur('poste') ?>
+        <?= champ_erreur($erreurs, 'poste') ?>
 
         <button type="submit">Creer</button>
     </form>

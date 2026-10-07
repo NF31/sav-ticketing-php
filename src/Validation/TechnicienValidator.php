@@ -19,11 +19,6 @@ final class TechnicienValidator
     public const int LONGUEUR_MAX_NOM = 100;
     public const int LONGUEUR_MAX_EMAIL = 255;
 
-    // Lettres de toutes langues (accents compris), espaces, tirets et
-    // apostrophes, en commencant par une lettre : "Jean-Pierre", "N'Diaye",
-    // "Le Gall" passent, "Karim2" ou "<b>" non.
-    private const string MOTIF_NOM = "/^\\p{L}[\\p{L}\\p{M}' -]*$/u";
-
     /**
      * Nettoie la saisie avant validation : espaces en trop retires des noms,
      * email en minuscules. Le mot de passe n'est jamais modifie (un espace
@@ -34,16 +29,13 @@ final class TechnicienValidator
      */
     public static function normaliser(array $saisie): array
     {
-        $texte = static fn (string $cle): string => is_string($saisie[$cle] ?? null) ? $saisie[$cle] : '';
-        $nom = static fn (string $valeur): string => (string) preg_replace('/\s+/u', ' ', trim($valeur));
-
         return [
-            'nom' => $nom($texte('nom')),
-            'prenom' => $nom($texte('prenom')),
-            'email' => mb_strtolower(trim($texte('email'))),
-            'password' => $texte('password'),
-            'password_confirmation' => $texte('password_confirmation'),
-            'poste' => trim($texte('poste')),
+            'nom' => Regles::normaliserEspaces(Regles::texte($saisie, 'nom')),
+            'prenom' => Regles::normaliserEspaces(Regles::texte($saisie, 'prenom')),
+            'email' => Regles::normaliserEmail(Regles::texte($saisie, 'email')),
+            'password' => Regles::texte($saisie, 'password'),
+            'password_confirmation' => Regles::texte($saisie, 'password_confirmation'),
+            'poste' => trim(Regles::texte($saisie, 'poste')),
         ];
     }
 
@@ -57,13 +49,13 @@ final class TechnicienValidator
         $erreurs = [];
 
         foreach (['nom' => 'Le nom', 'prenom' => 'Le prenom'] as $champ => $libelle) {
-            $erreur = self::erreurNom($donnees[$champ], $libelle);
+            $erreur = Regles::erreurNom($donnees[$champ], $libelle, self::LONGUEUR_MAX_NOM);
             if ($erreur !== null) {
                 $erreurs[$champ] = $erreur;
             }
         }
 
-        $erreurEmail = self::erreurEmail($donnees['email'], $emailDejaPris);
+        $erreurEmail = Regles::erreurEmail($donnees['email'], self::LONGUEUR_MAX_EMAIL, $emailDejaPris, 'Un compte existe deja avec cet email.');
         if ($erreurEmail !== null) {
             $erreurs['email'] = $erreurEmail;
         }
@@ -85,27 +77,5 @@ final class TechnicienValidator
         }
 
         return $erreurs;
-    }
-
-    private static function erreurNom(string $valeur, string $libelle): ?string
-    {
-        return match (true) {
-            $valeur === '' => "{$libelle} est obligatoire.",
-            mb_strlen($valeur) > self::LONGUEUR_MAX_NOM => "{$libelle} ne doit pas depasser " . self::LONGUEUR_MAX_NOM . ' caracteres.',
-            preg_match(self::MOTIF_NOM, $valeur) !== 1 => "{$libelle} ne peut contenir que des lettres, espaces, tirets et apostrophes.",
-            default => null,
-        };
-    }
-
-    /** @param Closure(string): bool $emailDejaPris */
-    private static function erreurEmail(string $email, Closure $emailDejaPris): ?string
-    {
-        return match (true) {
-            $email === '' => "L'email est obligatoire.",
-            mb_strlen($email) > self::LONGUEUR_MAX_EMAIL => "L'email ne doit pas depasser " . self::LONGUEUR_MAX_EMAIL . ' caracteres.',
-            filter_var($email, FILTER_VALIDATE_EMAIL) === false => "L'email n'est pas valide (ex. prenom.nom@sav.local).",
-            $emailDejaPris($email) => 'Un compte existe deja avec cet email.',
-            default => null,
-        };
     }
 }
