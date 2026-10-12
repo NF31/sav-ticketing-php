@@ -14,13 +14,22 @@ final class View
 {
     private const string TEMPLATES_DIR = __DIR__ . '/../../templates';
 
+    // Instance d'Auth de la requete (public/index.php), pour que le layout
+    // reutilise l'utilisateur deja charge au lieu de refaire la requete.
+    private static ?Auth $auth = null;
+
+    public static function utiliserAuth(Auth $auth): void
+    {
+        self::$auth = $auth;
+    }
+
     /** @param array<string, mixed> $data */
     public static function render(string $template, array $data = []): void
     {
         $content = self::capture($template, $data);
         echo self::capture('layout/base', [
             'content' => $content,
-            'auth' => new Auth(),
+            'auth' => self::$auth ??= new Auth(),
             // Pour surligner la page courante dans la navigation.
             'cheminCourant' => Request::normaliserChemin($_SERVER['REQUEST_URI'] ?? '/'),
         ]);

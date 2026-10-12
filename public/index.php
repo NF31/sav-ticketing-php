@@ -14,6 +14,7 @@ use App\Core\Env;
 use App\Core\Request;
 use App\Core\Router;
 use App\Core\SecurityHeaders;
+use App\Core\View;
 use App\Core\Session;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -53,5 +54,10 @@ $router->get('/articles', [ArticleController::class, 'index'], auth: true);
 $router->get('/admin/techniciens', [AdminController::class, 'techniciens'], auth: true, admin: true);
 $router->post('/admin/techniciens', [AdminController::class, 'creerTechnicien'], auth: true, admin: true);
 
-$router->dispatch(Request::fromGlobals(), new Auth());
+// Une seule instance par requete, partagee par le routeur, les controleurs
+// et le layout : l'utilisateur connecte n'est charge qu'une fois.
+$auth = new Auth();
+View::utiliserAuth($auth);
+
+$router->dispatch(Request::fromGlobals(), $auth);
 ApresReponse::terminer();
