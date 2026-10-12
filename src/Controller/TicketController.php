@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\Auth;
+use App\Core\Pagination;
 use App\Core\Request;
 use App\Core\Session;
 use App\Core\View;
@@ -40,10 +41,13 @@ final class TicketController
         $statutFiltre = $request->query('statut');
         $statut = $statutFiltre !== null && $statutFiltre !== '' ? TicketStatut::tryFrom($statutFiltre) : null;
 
+        $pagination = Pagination::depuis($request->query('page'), $this->tickets->compter($statut));
+
         View::render('tickets/index', [
-            'tickets' => $this->tickets->findAll($statut),
+            'tickets' => $this->tickets->findPage($statut, $pagination->parPage, $pagination->offset()),
             'statuts' => TicketStatut::cases(),
             'statutActif' => $statut,
+            'pagination' => $pagination,
         ]);
     }
 
