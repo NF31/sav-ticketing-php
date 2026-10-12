@@ -31,6 +31,15 @@ final class ClientRepository
         return $row !== false ? Client::fromRow($row) : null;
     }
 
+    public function findIdParEmail(string $email): ?int
+    {
+        $stmt = $this->pdo->prepare('SELECT id FROM clients WHERE email = :email LIMIT 1');
+        $stmt->execute(['email' => $email]);
+        $id = $stmt->fetchColumn();
+
+        return $id !== false ? (int) $id : null;
+    }
+
     public function emailExiste(string $email): bool
     {
         $stmt = $this->pdo->prepare('SELECT 1 FROM clients WHERE email = :email LIMIT 1');

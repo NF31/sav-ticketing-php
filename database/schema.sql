@@ -41,6 +41,9 @@ CREATE TABLE commandes (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     client_id INT UNSIGNED NOT NULL,
     date_commande DATE NOT NULL,
+    -- Numero de commande cote kbeauty-shop, pour les commandes importees
+    -- avec une demande de retour (NULL pour les commandes saisies ici).
+    reference_externe VARCHAR(50) NULL UNIQUE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_commandes_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -60,9 +63,12 @@ CREATE TABLE tickets (
     code VARCHAR(10) NOT NULL UNIQUE,
     commande_id INT UNSIGNED NOT NULL,
     technicien_id INT UNSIGNED NULL,
-    type ENUM('reparation', 'expedition', 'hotline') NOT NULL,
+    type ENUM('reparation', 'expedition', 'hotline', 'retour') NOT NULL,
     statut ENUM('nouveau', 'en_cours', 'en_attente_piece', 'expedie', 'termine') NOT NULL DEFAULT 'nouveau',
     description TEXT NULL,
+    -- Demande de retour kbeauty-shop a l'origine du ticket (type 'retour').
+    -- UNIQUE : un message RabbitMQ recu deux fois ne cree qu'un ticket.
+    retour_kbeauty_id INT UNSIGNED NULL UNIQUE,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     -- Liste des tickets (la plus consultee) : triee par date, filtree ou

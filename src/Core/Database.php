@@ -47,4 +47,14 @@ final class Database
 
         return self::$instance;
     }
+
+    /**
+     * Oublie la connexion : la suivante est ouverte a neuf. Pour les processus
+     * longs (bin/consommer-retours-kbeauty.php), qui ne peuvent pas compter
+     * sur une connexion ouverte depuis des heures.
+     */
+    public static function fermer(): void
+    {
+        self::$instance = null;
+    }
 }

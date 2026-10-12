@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kbeauty.internal/contracts/rabbitmq/return-request-submitted.schema.json",
+  "title": "return_request.submitted",
+  "description": "Evenement publie par kbeauty-shop (exchange kbeauty.exchange, routing key return_request.submitted) quand un client soumet une demande de retour. Consomme par sav-ticketing-php, qui en fait un ticket SAV. Ne transporte que ce dont le SAV a besoin (RGPD) : ni adresse, ni telephone, ni donnee de paiement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventType", "returnRequestId", "occurredAt", "order", "customer", "reason", "items"],
+  "properties": {
+    "eventType": {
+      "type": "string",
+      "const": "return_request.submitted"
+    },
+    "returnRequestId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Identifiant ReturnRequest cote kbeauty-shop. Cle d'idempotence : un meme message recu deux fois ne cree qu'un ticket."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Horodatage ISO-8601 UTC de la soumission de la demande."
+    },
+    "order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "placedAt", "currency"],
+      "properties": {
+        "number": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "placedAt": { "type": "string", "format": "date-time" },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+      }
+    },
+    "customer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "email"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "email": { "type": "string", "format": "email", "maxLength": 255 }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "description": "Motif saisi par le client (texte libre, a afficher comme du texte, jamais comme du HTML)."
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["productName", "variantLabel", "quantity", "amountCents"],
+        "properties": {
+          "productName": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "variantLabel": { "type": ["string", "null"], "maxLength": 255 },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "amountCents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Montant de la ligne retournee (prix unitaire x quantite), en centimes de order.currency."
+          }
+        }
+      }
+    }
+  }
+}
