@@ -10,12 +10,13 @@ use App\Controller\PasswordResetController;
 use App\Controller\TicketController;
 use App\Core\ApresReponse;
 use App\Core\Auth;
+use App\Core\Conteneur;
 use App\Core\Env;
 use App\Core\Request;
 use App\Core\Router;
 use App\Core\SecurityHeaders;
-use App\Core\View;
 use App\Core\Session;
+use App\Core\View;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -24,10 +25,14 @@ require __DIR__ . '/../vendor/autoload.php';
 ob_start();
 
 Env::load(__DIR__ . '/../.env');
+
+$conteneur = new Conteneur();
+(require __DIR__ . '/../config/services.php')($conteneur);
+
 SecurityHeaders::envoyer();
 Session::start();
 
-$router = new Router();
+$router = new Router($conteneur);
 
 $router->get('/', [AuthController::class, 'showLogin']);
 $router->get('/login', [AuthController::class, 'showLogin']);
@@ -54,10 +59,9 @@ $router->get('/articles', [ArticleController::class, 'index'], auth: true);
 $router->get('/admin/techniciens', [AdminController::class, 'techniciens'], auth: true, admin: true);
 $router->post('/admin/techniciens', [AdminController::class, 'creerTechnicien'], auth: true, admin: true);
 
-// Une seule instance par requete, partagee par le routeur, les controleurs
-// et le layout : l'utilisateur connecte n'est charge qu'une fois.
-$auth = new Auth();
-View::utiliserAuth($auth);
+// Le layout reutilise l'instance d'Auth de la requete (deja chargee par le
+// routeur pour le controle d'acces).
+View::utiliserAuth($conteneur->get(Auth::class));
 
-$router->dispatch(Request::fromGlobals(), $auth);
+$router->dispatch(Request::fromGlobals());
 ApresReponse::terminer();

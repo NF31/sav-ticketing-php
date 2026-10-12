@@ -12,11 +12,8 @@ use App\Validation\ClientValidator;
 
 final class ClientController
 {
-    private ClientRepository $clients;
-
-    public function __construct()
+    public function __construct(private readonly ClientRepository $clients)
     {
-        $this->clients = new ClientRepository();
     }
 
     public function index(Request $request): void
@@ -41,7 +38,7 @@ final class ClientController
 
     public function store(Request $request): void
     {
-        $donnees = ClientValidator::normaliser($_POST);
+        $donnees = ClientValidator::normaliser($request->donnees());
         $erreurs = ClientValidator::valider($donnees, $this->clients->emailExiste(...));
 
         if ($erreurs === []) {

@@ -29,7 +29,7 @@ final class View
         $content = self::capture($template, $data);
         echo self::capture('layout/base', [
             'content' => $content,
-            'auth' => self::$auth ??= new Auth(),
+            'auth' => self::$auth ?? throw new \LogicException('View::utiliserAuth() doit etre appele avant le rendu (public/index.php).'),
             // Pour surligner la page courante dans la navigation.
             'cheminCourant' => Request::normaliserChemin($_SERVER['REQUEST_URI'] ?? '/'),
         ]);

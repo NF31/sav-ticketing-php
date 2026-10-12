@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Core\Database;
 use PDO;
 
 /**
@@ -18,11 +17,8 @@ final class PasswordResetRepository
 {
     public const int DUREE_VALIDITE_MINUTES = 60;
 
-    private PDO $pdo;
-
-    public function __construct(?PDO $pdo = null)
+    public function __construct(private readonly PDO $pdo)
     {
-        $this->pdo = $pdo ?? Database::connection();
     }
 
     /**

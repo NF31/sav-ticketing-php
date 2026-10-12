@@ -14,6 +14,10 @@ final class Router
     /** @var list<array{method: string, pattern: string, regex: string, paramNames: list<string>, handler: array{0: string, 1: string}, requiresAuth: bool, requiresAdmin: bool}> */
     private array $routes = [];
 
+    public function __construct(private readonly Conteneur $conteneur)
+    {
+    }
+
     public function get(string $pattern, array $handler, bool $auth = false, bool $admin = false): void
     {
         $this->add('GET', $pattern, $handler, $auth, $admin);
@@ -44,8 +48,10 @@ final class Router
         ];
     }
 
-    public function dispatch(Request $request, Auth $authService): void
+    public function dispatch(Request $request): void
     {
+        $authService = $this->conteneur->get(Auth::class);
+
         foreach ($this->routes as $route) {
             if ($route['method'] !== $request->method) {
                 continue;
@@ -85,11 +91,9 @@ final class Router
             }
 
             [$controllerClass, $action] = $route['handler'];
-            // Meme instance d'Auth pour le controleur que pour le routeur :
-            // l'utilisateur deja charge pour le controle d'acces est reutilise.
-            // Transmise seulement aux controleurs qui la demandent.
-            $parametres = new \ReflectionClass($controllerClass)->getConstructor()?->getNumberOfParameters() ?? 0;
-            $controller = $parametres > 0 ? new $controllerClass($authService) : new $controllerClass();
+            // Le controleur arrive du conteneur avec ses dependances (dont la
+            // meme instance d'Auth que celle utilisee pour le controle d'acces).
+            $controller = $this->conteneur->get($controllerClass);
             $controller->$action($request->withRouteParams($params));
 
             return;
