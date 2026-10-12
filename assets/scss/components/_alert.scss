@@ -1,0 +1,25 @@
+@use "../abstracts" as *;
+
+.alert {
+  display: flex;
+  gap: space(3);
+  padding: space(3) space(4);
+  margin-bottom: space(5);
+  border: 1px solid transparent;
+  border-left-width: 4px;
+  border-radius: radius(md);
+  font-size: font-size(sm);
+  font-weight: 500;
+}
+
+.alert-error {
+  background: var(--color-danger-soft);
+  border-left-color: var(--color-danger);
+  color: var(--color-danger-text);
+}
+
+.alert-success {
+  background: var(--color-success-soft);
+  border-left-color: var(--color-success-text);
+  color: var(--color-success-text);
+}

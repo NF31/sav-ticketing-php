@@ -1,0 +1,18 @@
+@use "sass:map";
+@use "tokens";
+
+@function space($step) {
+  @if not map.has-key(tokens.$space, $step) {
+    @error "Espacement inconnu : #{$step}";
+  }
+
+  @return map.get(tokens.$space, $step);
+}
+
+@function radius($size) {
+  @return map.get(tokens.$radius, $size);
+}
+
+@function font-size($size) {
+  @return map.get(tokens.$font-size, $size);
+}

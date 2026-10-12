@@ -1,0 +1,48 @@
+@use "../abstracts" as *;
+
+// Historique des statuts : pastilles reliees par un trait vertical.
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline__item {
+  position: relative;
+  padding: 0 0 space(5) space(6);
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0.4rem;
+    top: 1.1rem;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+
+    &::before {
+      display: none;
+    }
+  }
+}
+
+.timeline__dot {
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 3px solid var(--color-primary);
+}
+
+.timeline__meta {
+  margin-top: space(1);
+  font-size: font-size(sm);
+  color: var(--color-text-muted);
+}

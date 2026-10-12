@@ -1,0 +1,65 @@
+@use "../abstracts" as *;
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: space(4);
+  margin-bottom: space(6);
+}
+
+.page-header__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: space(3);
+}
+
+.page-header__subtitle {
+  margin-top: space(1);
+  color: var(--color-text-muted);
+  font-size: font-size(sm);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: space(1);
+  margin-bottom: space(3);
+  font-size: font-size(sm);
+  color: var(--color-text-muted);
+
+  &:hover {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: space(6);
+}
+
+// Deux colonnes a partir de md ; la variante --aside donne une colonne
+// principale large et une colonne laterale (fiche ticket, equipe).
+.grid {
+  display: grid;
+  gap: space(6);
+  align-items: start;
+
+  @include from(md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.grid--aside {
+  @include from(md) {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.narrow {
+  max-width: 640px;
+}

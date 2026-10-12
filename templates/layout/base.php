@@ -1,7 +1,19 @@
 <?php
 /** @var string $content */
 /** @var \App\Core\Auth $auth */
+/** @var string $cheminCourant */
 $user = $auth->user();
+
+$liens = [
+    ['/tickets', 'Tickets', 'ticket'],
+    ['/clients', 'Clients', 'clients'],
+    ['/articles', 'Articles', 'articles'],
+];
+if ($user?->role === \App\Enum\Role::Admin) {
+    $liens[] = ['/admin/techniciens', 'Equipe', 'equipe'];
+}
+
+$estActif = static fn (string $href): bool => $cheminCourant === $href || str_starts_with($cheminCourant, $href . '/');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -12,28 +24,55 @@ $user = $auth->user();
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-    <header class="topbar">
-        <a href="/tickets" class="brand">SAV Ticketing</a>
-        <?php if ($user !== null): ?>
-            <nav>
-                <a href="/tickets">Tickets</a>
-                <a href="/clients">Clients</a>
-                <a href="/articles">Articles</a>
-                <?php if ($user->role === \App\Enum\Role::Admin): ?>
-                    <a href="/admin/techniciens">Techniciens</a>
-                <?php endif; ?>
+<?php if ($user === null): ?>
+    <main class="auth">
+        <div class="auth__panel">
+            <a href="/login" class="auth__brand">
+                <span class="sidebar__logo"><?= icone('logo') ?></span>
+                SAV Ticketing
+            </a>
+            <?= $content ?>
+        </div>
+    </main>
+<?php else: ?>
+    <div class="app">
+        <aside class="sidebar">
+            <a href="/tickets" class="sidebar__brand">
+                <span class="sidebar__logo"><?= icone('logo') ?></span>
+                SAV Ticketing
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navigation principale">
+                <?php foreach ($liens as [$href, $libelle, $icone]): ?>
+                    <a href="<?= e($href) ?>" class="sidebar__link"<?= $estActif($href) ? ' aria-current="page"' : '' ?>>
+                        <?= icone($icone) ?>
+                        <?= e($libelle) ?>
+                    </a>
+                <?php endforeach; ?>
             </nav>
-            <div class="user-box">
-                <span><?= e($user->nomComplet()) ?> (<?= e($user->role->label()) ?>)</span>
+
+            <div class="sidebar__user">
+                <span class="avatar"><?= e(initiales($user->nomComplet())) ?></span>
+                <span class="sidebar__user-info">
+                    <span class="sidebar__user-name"><?= e($user->nomComplet()) ?></span>
+                    <span class="sidebar__user-role"><?= e($user->role->label()) ?></span>
+                </span>
                 <form action="/logout" method="post">
                     <?= csrf_champ() ?>
-                    <button type="submit">Deconnexion</button>
+                    <button type="submit" class="btn btn--ghost btn--icon" title="Deconnexion">
+                        <?= icone('deconnexion') ?>
+                        <span class="visually-hidden">Deconnexion</span>
+                    </button>
                 </form>
             </div>
-        <?php endif; ?>
-    </header>
-    <main class="container">
-        <?= $content ?>
-    </main>
+        </aside>
+
+        <main class="main">
+            <div class="main__inner">
+                <?= $content ?>
+            </div>
+        </main>
+    </div>
+<?php endif; ?>
 </body>
 </html>

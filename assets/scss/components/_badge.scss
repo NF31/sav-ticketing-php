@@ -1,0 +1,49 @@
+@use "sass:map";
+@use "../abstracts" as *;
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: radius(pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  font-size: font-size(xs);
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+// Une pastille par statut de ticket, generee depuis la meme liste que les
+// variables de couleur (base/_root.scss). Classes = TicketStatut::badgeClass().
+$statuts-badge: nouveau, en-cours, attente, expedie, termine;
+
+@each $statut in $statuts-badge {
+  .badge-#{$statut} {
+    background: var(--statut-#{$statut}-bg);
+    color: var(--statut-#{$statut}-text);
+    border-color: transparent;
+
+    &::before {
+      content: "";
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: var(--statut-#{$statut}-dot);
+    }
+  }
+}
+
+.badge--primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  border-color: transparent;
+}
+
+.badge--danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+  border-color: transparent;
+}
