@@ -1,0 +1,112 @@
+@use "sass:map";
+@use "../abstracts" as *;
+
+// Theme sous forme de variables CSS : les composants ecrivent
+// var(--color-surface), et le theme sombre n'a qu'a redefinir ces
+// variables, sans dupliquer une seule regle de composant.
+
+$theme-clair: (
+  bg: map.get($slate, 100),
+  surface: #fff,
+  surface-muted: map.get($slate, 50),
+  surface-hover: map.get($slate, 50),
+  border: map.get($slate, 200),
+  border-strong: map.get($slate, 300),
+  text: map.get($slate, 900),
+  text-muted: map.get($slate, 500),
+  text-subtle: map.get($slate, 400),
+  primary: map.get($blue, 600),
+  primary-hover: map.get($blue, 700),
+  primary-soft: map.get($blue, 50),
+  primary-text: map.get($blue, 700),
+  on-primary: #fff,
+  focus: map.get($blue, 500),
+  danger: map.get($red, 600),
+  danger-soft: map.get($red, 50),
+  danger-text: map.get($red, 700),
+  success-soft: map.get($green, 50),
+  success-text: map.get($green, 700),
+  sidebar-bg: map.get($slate, 900),
+  sidebar-text: map.get($slate, 400),
+  sidebar-text-active: #fff,
+  sidebar-hover: map.get($slate, 800),
+  sidebar-border: map.get($slate, 800),
+);
+
+$theme-sombre: (
+  bg: map.get($slate, 950),
+  surface: map.get($slate, 900),
+  surface-muted: #131c2e,
+  surface-hover: map.get($slate, 800),
+  border: map.get($slate, 800),
+  border-strong: map.get($slate, 700),
+  text: map.get($slate, 100),
+  text-muted: map.get($slate, 400),
+  text-subtle: map.get($slate, 500),
+  primary: map.get($blue, 500),
+  primary-hover: map.get($blue, 400),
+  primary-soft: rgba(map.get($blue, 500), 0.14),
+  primary-text: map.get($blue, 300),
+  on-primary: #fff,
+  focus: map.get($blue, 400),
+  danger: map.get($red, 400),
+  danger-soft: rgba(map.get($red, 600), 0.14),
+  danger-text: map.get($red, 400),
+  success-soft: rgba(map.get($green, 600), 0.14),
+  success-text: map.get($green, 400),
+  sidebar-bg: #080d18,
+  sidebar-text: map.get($slate, 400),
+  sidebar-text-active: #fff,
+  sidebar-hover: map.get($slate, 900),
+  sidebar-border: map.get($slate, 900),
+);
+
+// Un statut de ticket = un fond doux + un texte + une pastille, en clair
+// et en sombre. Cles = classes renvoyees par TicketStatut::badgeClass().
+$statuts: (
+  nouveau: (couleur: $violet),
+  en-cours: (couleur: $amber),
+  attente: (couleur: $orange),
+  expedie: (couleur: $sky),
+  termine: (couleur: $green),
+);
+
+@mixin variables-theme($theme, $sombre: false) {
+  @each $nom, $valeur in $theme {
+    --color-#{$nom}: #{$valeur};
+  }
+
+  @each $statut, $config in $statuts {
+    $c: map.get($config, couleur);
+
+    @if $sombre {
+      --statut-#{$statut}-bg: #{rgba(map.get($c, 400), 0.14)};
+      --statut-#{$statut}-text: #{map.get($c, 400)};
+    } @else {
+      --statut-#{$statut}-bg: #{map.get($c, 100)};
+      --statut-#{$statut}-text: #{map.get($c, 700)};
+    }
+
+    --statut-#{$statut}-dot: #{map.get($c, 400)};
+  }
+
+  @if $sombre {
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  } @else {
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  }
+}
+
+:root {
+  @include variables-theme($theme-clair);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    @include variables-theme($theme-sombre, $sombre: true);
+  }
+}

@@ -78,3 +78,27 @@ jobs:
 
       - name: Lancer les tests
         run: composer test
+
+  css:
+    name: CSS compile a jour (Sass)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer Dart Sass
+        run: npm ci --no-audit --no-fund
+
+      # public/assets/style.css est versionne (l'application n'a pas d'etape
+      # de build au deploiement) : il doit correspondre exactement au SCSS.
+      - name: Recompiler et comparer
+        run: |
+          npm run build:css
+          git diff --exit-code -- public/assets/style.css \
+            || { echo "::error::public/assets/style.css n'est pas a jour : lancer npm run build:css et committer."; exit 1; }

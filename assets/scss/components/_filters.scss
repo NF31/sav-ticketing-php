@@ -1,0 +1,37 @@
+@use "../abstracts" as *;
+
+// Filtres par statut : groupe de pastilles, la pastille active est pleine.
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: space(2);
+  margin-bottom: space(5);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem space(3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: radius(pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: font-size(sm);
+  font-weight: 500;
+  transition: background $transition, color $transition, border-color $transition;
+
+  &:hover {
+    color: var(--color-text);
+    border-color: var(--color-text-subtle);
+    text-decoration: none;
+  }
+
+  @include focus-ring;
+}
+
+.chip-active,
+.chip-active:hover {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-surface);
+}

@@ -1,0 +1,21 @@
+// Point d'entree SCSS, compile vers public/assets/style.css
+// (npm run build:css). Ne pas modifier style.css a la main.
+
+@use "base/root";
+@use "base/reset";
+@use "base/typography";
+
+@use "layout/app";
+@use "layout/auth";
+@use "layout/page";
+
+@use "components/button";
+@use "components/card";
+@use "components/form";
+@use "components/table";
+@use "components/badge";
+@use "components/alert";
+@use "components/filters";
+@use "components/details";
+@use "components/timeline";
+@use "components/misc";

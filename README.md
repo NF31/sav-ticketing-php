@@ -52,8 +52,39 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
   `#[\NoDiscard]` sur `withRouteParams()`
 - Envoi d'emails via l'API HTTP de Resend avec l'extension curl, sans
   SDK (meme requete que `resend/resend-php`, sans Guzzle)
+- SCSS compile avec Dart Sass (theme clair/sombre, aucune dependance CSS
+  ou police externe)
 - PHPUnit (tests unitaires sur la machine a etats + tests d'integration
   sur les repositories, contre une vraie base)
+
+## Design (SCSS)
+
+Les styles sont ecrits en SCSS dans `assets/scss/` et compiles vers
+`public/assets/style.css` avec [Dart Sass](https://sass-lang.com/dart-sass)
+(le compilateur officiel, via npm : Node ne sert qu'a cette etape) :
+
+```bash
+npm install
+npm run build:css   # compile une fois (CSS minifie, celui qui est versionne)
+npm run watch:css   # recompile a chaque modification, pendant le developpement
+```
+
+Organisation :
+
+- `abstracts/` : palette, echelles (espacements, rayons, tailles de
+  texte, points de rupture), fonctions et mixins. Ne produit aucun CSS.
+- `base/` : variables CSS des themes clair et sombre (suit le reglage du
+  systeme), reset, typographie.
+- `layout/` : coquille de l'application (barre laterale), pages de
+  connexion, en-tetes et grilles de page.
+- `components/` : boutons, cartes, formulaires, tableaux, badges (un par
+  statut de ticket, generes depuis une seule liste), alertes, filtres,
+  historique.
+
+`style.css` est versionne (aucune etape de build au deploiement) ; la CI
+verifie qu'il correspond au SCSS. Aucune police ni icone externe : la CSP
+n'autorise que les ressources du site, les icones sont des SVG inline
+(`icone()` dans `src/helpers.php`).
 
 ## Lancer le projet en local
 

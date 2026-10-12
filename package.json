@@ -1,0 +1,12 @@
+{
+  "name": "sav-ticketing-php",
+  "private": true,
+  "description": "Outillage front uniquement : compilation du SCSS (assets/scss) vers public/assets/style.css.",
+  "scripts": {
+    "build:css": "sass assets/scss/app.scss public/assets/style.css --style=compressed --no-source-map",
+    "watch:css": "sass --watch assets/scss/app.scss public/assets/style.css --style=compressed --no-source-map"
+  },
+  "devDependencies": {
+    "sass": "^1.105.1"
+  }
+}
