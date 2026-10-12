@@ -83,7 +83,7 @@ final class TicketController
     {
         View::render('tickets/create', [
             'commandes' => $this->commandes->findAllAvecClient(),
-            'types' => TicketType::cases(),
+            'types' => TicketType::saisissables(),
             'erreurs' => Session::pullFlashDonnees('erreurs'),
             'anciennes' => Session::pullFlashDonnees('anciennes'),
             'longueurMaxDescription' => TicketValidator::LONGUEUR_MAX_DESCRIPTION,
