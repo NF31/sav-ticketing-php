@@ -10,11 +10,8 @@ use App\Repository\ArticleRepository;
 
 final class ArticleController
 {
-    private ArticleRepository $articles;
-
-    public function __construct()
+    public function __construct(private readonly ArticleRepository $articles)
     {
-        $this->articles = new ArticleRepository();
     }
 
     public function index(Request $request): void

@@ -30,7 +30,7 @@ final class Auth
     private ?User $utilisateur = null;
     private bool $utilisateurCharge = false;
 
-    public function __construct(private readonly UserRepository $users = new UserRepository())
+    public function __construct(private readonly UserRepository $users)
     {
     }
 

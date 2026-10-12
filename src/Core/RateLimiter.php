@@ -13,11 +13,8 @@ use PDO;
  */
 final class RateLimiter
 {
-    private PDO $pdo;
-
-    public function __construct(?PDO $pdo = null)
+    public function __construct(private readonly PDO $pdo)
     {
-        $this->pdo = $pdo ?? Database::connection();
     }
 
     public function tropDeTentatives(string $cle, int $max, int $fenetreMinutes): bool

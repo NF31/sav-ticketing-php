@@ -7,7 +7,6 @@ namespace App\Controller;
 use App\Core\ApresReponse;
 use App\Core\Env;
 use App\Core\Mail\Mailer;
-use App\Core\Mail\MailerFactory;
 use App\Core\RateLimiter;
 use App\Core\Request;
 use App\Core\Session;
@@ -31,17 +30,12 @@ final class PasswordResetController
     private const string MESSAGE_DEMANDE_ENVOYEE = 'Si un compte existe pour cet email, un lien de reinitialisation vient d\'etre envoye. Il est valable '
         . PasswordResetRepository::DUREE_VALIDITE_MINUTES . ' minutes.';
 
-    private UserRepository $users;
-    private PasswordResetRepository $resets;
-    private Mailer $mailer;
-    private RateLimiter $limiter;
-
-    public function __construct()
-    {
-        $this->users = new UserRepository();
-        $this->resets = new PasswordResetRepository();
-        $this->mailer = MailerFactory::depuisEnv();
-        $this->limiter = new RateLimiter();
+    public function __construct(
+        private readonly UserRepository $users,
+        private readonly PasswordResetRepository $resets,
+        private readonly Mailer $mailer,
+        private readonly RateLimiter $limiter,
+    ) {
     }
 
     public function showDemande(Request $request): void
@@ -134,8 +128,8 @@ final class PasswordResetController
     {
         $jeton = $request->param('token');
         // Pas de trim() : un espace en debut/fin de mot de passe est volontaire.
-        $motDePasse = (string) ($_POST['password'] ?? '');
-        $confirmation = (string) ($_POST['password_confirmation'] ?? '');
+        $motDePasse = $request->brut('password');
+        $confirmation = $request->brut('password_confirmation');
 
         $erreur = MotDePasse::erreur($motDePasse)
             ?? ($motDePasse !== $confirmation ? 'Les deux mots de passe ne correspondent pas.' : null);
