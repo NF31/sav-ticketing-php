@@ -22,9 +22,9 @@ final class AuthController
     private Auth $auth;
     private RateLimiter $limiter;
 
-    public function __construct()
+    public function __construct(?Auth $auth = null)
     {
-        $this->auth = new Auth();
+        $this->auth = $auth ?? new Auth();
         $this->limiter = new RateLimiter();
     }
 

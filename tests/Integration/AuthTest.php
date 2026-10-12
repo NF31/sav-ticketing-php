@@ -85,7 +85,49 @@ final class AuthTest extends TestCase
         $resets = new PasswordResetRepository($this->pdo);
         $resets->reinitialiserMotDePasse($resets->creerJeton($this->userId), 'nouveau-mdp-456');
 
-        self::assertNull($this->auth->user());
+        // Requete HTTP suivante de la session deja ouverte : nouvelle instance
+        // d'Auth (une par requete), meme session.
+        $requeteSuivante = new Auth(new UserRepository($this->pdo));
+
+        self::assertNull($requeteSuivante->user());
         self::assertArrayNotHasKey('user_id', $_SESSION);
+    }
+
+    /**
+     * user() est appele plusieurs fois par page (routeur, controleur,
+     * layout) : une seule requete SQL pour l'utilisateur. Compte les
+     * requetes preparees executees sur la connexion (compteur MariaDB).
+     */
+    public function testLUtilisateurNEstChargeQuUneFoisParInstance(): void
+    {
+        self::assertTrue($this->auth->attempt(self::EMAIL_TEST, 'bon-mdp-123'));
+        $requete = new Auth(new UserRepository($this->pdo));
+
+        // La lecture du compteur est elle-meme une requete preparee : son cout
+        // est mesure puis retranche.
+        $coutMesure = -$this->requetesExecutees() + $this->requetesExecutees();
+
+        $avant = $this->requetesExecutees();
+        $requete->check();
+        $requete->isAdmin();
+        $requete->user();
+        $requete->user();
+
+        self::assertSame(1, $this->requetesExecutees() - $avant - $coutMesure);
+    }
+
+    public function testLaDeconnexionVideLeCache(): void
+    {
+        self::assertTrue($this->auth->attempt(self::EMAIL_TEST, 'bon-mdp-123'));
+        self::assertNotNull($this->auth->user());
+
+        $this->auth->logout();
+
+        self::assertNull($this->auth->user());
+    }
+
+    private function requetesExecutees(): int
+    {
+        return (int) $this->pdo->query("SHOW SESSION STATUS LIKE 'Com_stmt_execute'")->fetch()['Value'];
     }
 }

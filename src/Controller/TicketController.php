@@ -22,9 +22,9 @@ final class TicketController
     private CommandeRepository $commandes;
     private UserRepository $users;
 
-    public function __construct()
+    public function __construct(?Auth $auth = null)
     {
-        $this->auth = new Auth();
+        $this->auth = $auth ?? new Auth();
         $this->tickets = new TicketRepository();
         $this->commandes = new CommandeRepository();
         $this->users = new UserRepository();
