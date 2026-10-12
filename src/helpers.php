@@ -61,6 +61,7 @@ function icone(string $nom, string $classe = 'icon'): string
         'deconnexion' => '<path d="M9 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3"/><path d="m16 16 4-4-4-4"/><path d="M20 12H10"/>',
         'plus' => '<path d="M12 5v14M5 12h14"/>',
         'retour' => '<path d="M19 12H5"/><path d="m11 18-6-6 6-6"/>',
+        'suivant' => '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
         'logo' => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
         'vide' => '<path d="M3 13h5l2 3h4l2-3h5"/><path d="M5.5 5h13l2.5 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/>',
     ];

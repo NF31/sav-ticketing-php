@@ -2,7 +2,16 @@
 /** @var list<\App\Entity\Ticket> $tickets */
 /** @var list<\App\Enum\TicketStatut> $statuts */
 /** @var ?\App\Enum\TicketStatut $statutActif */
-$nombre = count($tickets);
+/** @var \App\Core\Pagination $pagination */
+$nombre = $pagination->total;
+
+// Lien vers une page en gardant le filtre de statut ; http_build_query
+// ignore les valeurs null (pas de ?statut= sans filtre, pas de page=1).
+$lienPage = static function (int $page) use ($statutActif): string {
+    $query = http_build_query(['statut' => $statutActif?->value, 'page' => $page > 1 ? $page : null]);
+
+    return '/tickets' . ($query !== '' ? '?' . $query : '');
+};
 ?>
 <div class="page-header">
     <div>
@@ -65,3 +74,24 @@ $nombre = count($tickets);
         </div>
     <?php endif; ?>
 </div>
+
+<?php if ($pagination->nombrePages > 1): ?>
+    <nav class="pagination" aria-label="Pagination">
+        <?php if ($pagination->aPrecedente()): ?>
+            <a class="btn btn--secondary" href="<?= e($lienPage($pagination->page - 1)) ?>" rel="prev"><?= icone('retour') ?> Precedent</a>
+        <?php else: ?>
+            <span class="btn btn--secondary pagination__inactif" aria-disabled="true"><?= icone('retour') ?> Precedent</span>
+        <?php endif; ?>
+
+        <p class="pagination__info">
+            Page <?= $pagination->page ?> sur <?= $pagination->nombrePages ?>
+            <span class="text-muted">&middot; tickets <?= $pagination->premier() ?>&ndash;<?= $pagination->dernier() ?></span>
+        </p>
+
+        <?php if ($pagination->aSuivante()): ?>
+            <a class="btn btn--secondary" href="<?= e($lienPage($pagination->page + 1)) ?>" rel="next">Suivant <?= icone('suivant') ?></a>
+        <?php else: ?>
+            <span class="btn btn--secondary pagination__inactif" aria-disabled="true">Suivant <?= icone('suivant') ?></span>
+        <?php endif; ?>
+    </nav>
+<?php endif; ?>

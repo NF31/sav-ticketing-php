@@ -85,6 +85,14 @@ MVC ecrit a la main, avec injection de dependances :
   de service, qui ne ferait que relayer les appels.
 - `src/Repository/` : acces SQL (requetes preparees), recoivent la
   connexion PDO.
+- Liste des tickets paginee (20 par page, `src/Core/Pagination.php`) et
+  servie par deux index (`created_at`, `statut + created_at`). La page est
+  choisie par une jointure differee : les ids de la page sont lus dans
+  l'index, puis seules ces lignes sont jointes aux clients et techniciens
+  (sur 20 000 tickets : ~3,5 ms par page au lieu de ~47 ms). Pagination
+  par decalage (`OFFSET`), simple et suffisante ici ; sur des millions de
+  lignes, une pagination par curseur (`WHERE created_at < ...`) eviterait
+  de parcourir les pages precedentes.
 - `src/Entity/`, `src/Enum/` (dont la machine a etats des statuts),
   `src/Validation/` : donnees et regles metier, sans acces a la base.
 - `templates/` : vues PHP, echappement systematique.
@@ -198,6 +206,13 @@ sed -n '/CREATE TABLE password_resets/,$p' database/schema.sql \
   | docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing
 ```
 
+Base creee avant l'ajout des index de la liste des tickets : les ajouter
+avec (rejouable sans erreur)
+
+```bash
+docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/migrations/001_index_tickets.sql
+```
+
 ## Tests
 
 ```bash
@@ -214,5 +229,4 @@ sont en `MAIL_MAILER=log` : aucun envoi reel, aucun secret necessaire.
 
 - Formulaire de creation de commande/client depuis la meme page qu'un
   ticket (actuellement il faut deja avoir une commande existante)
-- Pagination sur la liste des tickets
 - Recherche/filtre par client ou technicien
