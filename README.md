@@ -44,7 +44,8 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 
 - PHP 8.5, sans framework (routeur, conteneur d'injection de dependances,
   acces aux donnees tous ecrits a la main)
-- PDO / MySQL (MariaDB en dev), uniquement des requetes preparees
+- PDO / MySQL (MariaDB en dev), uniquement des requetes preparees (voir
+  "Securite des requetes SQL")
 - `enum` natifs pour les statuts/roles/types (pas de "magic strings")
 - Proprietes `readonly` pour les entites (DTO immutables)
 - Nouveautes PHP 8.5 dans `Request` : extension URI native
@@ -170,6 +171,8 @@ cp .env.example .env
 
 docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/schema.sql
 docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/seed.sql
+# compte limite utilise par l'application (DB_USER=sav_app dans .env)
+docker exec -i sav-ticketing-mysql mariadb -uroot -proot < database/utilisateur_app.sql
 
 composer serve   # http://localhost:8090
 # equivalent : PHP_CLI_SERVER_WORKERS=4 php -S localhost:8090 -t public
@@ -244,6 +247,32 @@ Base creee avant l'ajout des notifications : creer la table avec
 ```bash
 docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/migrations/002_notifications.sql
 ```
+
+Base creee quand l'application se connectait en root : creer le compte
+`sav_app` avec `database/utilisateur_app.sql` (commande ci-dessus), puis
+`DB_USER=sav_app` et `DB_PASSWORD=sav_app` dans `.env`.
+
+## Securite des requetes SQL
+
+Sans ORM, la protection contre l'injection SQL repose sur trois niveaux :
+
+1. **Requetes preparees partout** : chaque valeur venant de l'utilisateur
+   est envoyee a part (`WHERE id = :id`), jamais collee dans le texte SQL.
+   `ATTR_EMULATE_PREPARES` a `false` : la preparation est faite par
+   MariaDB elle-meme, pas simulee par PDO. Ce qui ne peut pas etre un
+   parametre (statut du filtre, sens du tri) vient d'un `enum` ou d'une
+   constante, jamais directement de la requete HTTP.
+2. **Verifie automatiquement** : `tests/Unit/RequetesSqlTest.php` analyse
+   tout `src/` et echoue si le texte passe a `prepare()`, `query()` ou
+   `exec()` contient une variable ou un appel de fonction. Une erreur
+   future est bloquee par la CI, pas laissee a la relecture.
+3. **Moindre privilege** : l'application se connecte avec `sav_app`, qui
+   peut seulement lire et ecrire les donnees (`SELECT`, `INSERT`,
+   `UPDATE`, `DELETE`). Meme si une injection passait, impossible de
+   supprimer une table, de lire un fichier du serveur ou une autre base.
+   `root` ne sert qu'a l'installation et aux migrations ;
+   `tests/Integration/DroitsBaseTest.php` echoue si `.env` utilise un
+   compte qui peut modifier le schema.
 
 ## Tests
 
