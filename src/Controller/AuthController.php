@@ -19,13 +19,10 @@ final class AuthController
     private const int MAX_ECHECS_PAR_IP = 20;
     private const int FENETRE_LIMITE_MINUTES = 15;
 
-    private Auth $auth;
-    private RateLimiter $limiter;
-
-    public function __construct(?Auth $auth = null)
-    {
-        $this->auth = $auth ?? new Auth();
-        $this->limiter = new RateLimiter();
+    public function __construct(
+        private readonly Auth $auth,
+        private readonly RateLimiter $limiter,
+    ) {
     }
 
     public function showLogin(Request $request): void
@@ -45,7 +42,9 @@ final class AuthController
     public function login(Request $request): void
     {
         $email = $request->input('email');
-        $password = $request->input('password');
+        // Mot de passe lu tel quel, comme a la reinitialisation : un espace en
+        // debut ou fin fait partie du mot de passe.
+        $password = $request->brut('password');
 
         // Les echecs sont comptes que l'email existe ou non : le blocage ne
         // revele donc pas si le compte existe.

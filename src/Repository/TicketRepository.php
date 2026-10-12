@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Core\Database;
 use App\Entity\Ticket;
 use App\Enum\TicketStatut;
 use App\Enum\TicketType;
@@ -12,8 +11,6 @@ use PDO;
 
 final class TicketRepository
 {
-    private PDO $pdo;
-
     private const string SELECT_BASE = <<<'SQL'
         SELECT
             t.*,
@@ -25,9 +22,8 @@ final class TicketRepository
         LEFT JOIN users u ON u.id = t.technicien_id
         SQL;
 
-    public function __construct(?PDO $pdo = null)
+    public function __construct(private readonly PDO $pdo)
     {
-        $this->pdo = $pdo ?? Database::connection();
     }
 
     /**

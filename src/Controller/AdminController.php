@@ -14,11 +14,8 @@ use App\Validation\TechnicienValidator;
 
 final class AdminController
 {
-    private UserRepository $users;
-
-    public function __construct()
+    public function __construct(private readonly UserRepository $users)
     {
-        $this->users = new UserRepository();
     }
 
     public function techniciens(Request $request): void
@@ -37,7 +34,7 @@ final class AdminController
 
     public function creerTechnicien(Request $request): void
     {
-        $donnees = TechnicienValidator::normaliser($_POST);
+        $donnees = TechnicienValidator::normaliser($request->donnees());
         $erreurs = TechnicienValidator::valider($donnees, $this->users->emailExiste(...));
 
         if ($erreurs === []) {
