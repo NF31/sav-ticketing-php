@@ -117,4 +117,58 @@ final class TicketRepositoryTest extends TestCase
         self::assertSame($technicien->id, $users->findTechnicien($technicien->id)?->id);
         self::assertNull($users->findTechnicien(999999));
     }
+
+    /**
+     * Les tickets crees dans la meme seconde ont le meme created_at : le tri
+     * secondaire sur l'id les garde dans un ordre fixe d'une page a l'autre.
+     */
+    public function testFindPageDecoupeDuPlusRecentAuPlusAncien(): void
+    {
+        $a = $this->tickets->create(1, TicketType::Hotline, null);
+        $b = $this->tickets->create(1, TicketType::Hotline, null);
+        $c = $this->tickets->create(1, TicketType::Hotline, null);
+        $this->ticketsCrees = [$a, $b, $c];
+
+        $page1 = $this->tickets->findPage(null, 2, 0);
+        $page2 = $this->tickets->findPage(null, 2, 2);
+
+        self::assertSame([$c, $b], array_map(static fn ($t): int => $t->id, $page1));
+        self::assertSame($a, $page2[0]->id);
+        // Jointures faites apres la pagination : le nom du client est bien charge.
+        self::assertNotSame('', trim($page1[0]->clientNomComplet));
+    }
+
+    public function testFindPageEtCompterAppliquentLeFiltreDeStatut(): void
+    {
+        $avant = $this->tickets->compter(TicketStatut::Nouveau);
+        $totalAvant = $this->tickets->compter();
+
+        $this->ticketsCrees[] = $this->tickets->create(1, TicketType::Reparation, null);
+
+        self::assertSame($avant + 1, $this->tickets->compter(TicketStatut::Nouveau));
+        self::assertSame($totalAvant + 1, $this->tickets->compter());
+
+        $enCours = $this->tickets->findPage(TicketStatut::EnCours, 100, 0);
+        self::assertCount($this->tickets->compter(TicketStatut::EnCours), $enCours);
+        foreach ($enCours as $ticket) {
+            self::assertSame(TicketStatut::EnCours, $ticket->statut);
+        }
+    }
+
+    /** Index de la liste des tickets (schema.sql), dans le bon ordre de colonnes. */
+    public function testIndexDeLaListeDesTicketsExistent(): void
+    {
+        $stmt = $this->pdo->query(
+            "SELECT index_name, GROUP_CONCAT(column_name ORDER BY seq_in_index) AS colonnes
+             FROM information_schema.statistics
+             WHERE table_schema = DATABASE() AND table_name = 'tickets'
+               AND index_name IN ('idx_tickets_date', 'idx_tickets_statut_date')
+             GROUP BY index_name"
+        );
+
+        self::assertSame(
+            ['idx_tickets_date' => 'created_at', 'idx_tickets_statut_date' => 'statut,created_at'],
+            $stmt->fetchAll(PDO::FETCH_KEY_PAIR),
+        );
+    }
 }

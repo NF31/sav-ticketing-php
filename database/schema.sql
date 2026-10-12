@@ -65,6 +65,10 @@ CREATE TABLE tickets (
     description TEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    -- Liste des tickets (la plus consultee) : triee par date, filtree ou
+    -- non par statut. Sans ces index, chaque page trie toute la table.
+    INDEX idx_tickets_date (created_at),
+    INDEX idx_tickets_statut_date (statut, created_at),
     CONSTRAINT fk_tickets_commande FOREIGN KEY (commande_id) REFERENCES commandes (id) ON DELETE CASCADE,
     CONSTRAINT fk_tickets_technicien FOREIGN KEY (technicien_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

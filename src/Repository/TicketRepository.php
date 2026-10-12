@@ -11,41 +11,88 @@ use PDO;
 
 final class TicketRepository
 {
-    private const string SELECT_BASE = <<<'SQL'
+    private const string COLONNES = <<<'SQL'
         SELECT
             t.*,
             CONCAT(c.prenom, ' ', c.nom) AS client_nom_complet,
             CONCAT(u.prenom, ' ', u.nom) AS technicien_nom_complet
-        FROM tickets t
+        SQL;
+
+    private const string JOINTURES = <<<'SQL'
         INNER JOIN commandes co ON co.id = t.commande_id
         INNER JOIN clients c ON c.id = co.client_id
         LEFT JOIN users u ON u.id = t.technicien_id
         SQL;
+
+    private const string SELECT_BASE = self::COLONNES . ' FROM tickets t ' . self::JOINTURES;
 
     public function __construct(private readonly PDO $pdo)
     {
     }
 
     /**
-     * @param TicketStatut|null $statut filtre optionnel, ex. dashboard "tickets en cours"
+     * Une page de tickets, du plus recent au plus ancien.
+     *
+     * Jointure differee : le sous-select choisit d'abord les ids de la page
+     * sur la seule table tickets, en parcourant l'index idx_tickets_date ou
+     * idx_tickets_statut_date dans l'ordre (InnoDB ajoute la cle primaire a
+     * chaque index secondaire : l'index suffit, sans lire la table). Les
+     * jointures ne portent ensuite que sur ces lignes. En une seule requete
+     * avec jointures, MariaDB partait de commandes, lisait tous les tickets
+     * puis les triait (verifie avec EXPLAIN sur 20 000 tickets : ~47 ms
+     * par page contre ~3,5 ms ici, pour les memes resultats).
+     *
+     * t.id en second critere de tri : plusieurs tickets peuvent avoir le
+     * meme created_at (a la seconde pres), et sans ordre total un ticket
+     * pourrait apparaitre sur deux pages, ou sur aucune.
+     *
+     * @param TicketStatut|null $statut filtre optionnel, ex. "tickets en cours"
      * @return list<Ticket>
      */
-    public function findAll(?TicketStatut $statut = null): array
+    public function findPage(?TicketStatut $statut, int $limite, int $offset): array
     {
-        $sql = self::SELECT_BASE;
-        $params = [];
+        [$where, $params] = self::filtreStatut($statut);
+        $ordre = ' ORDER BY t.created_at DESC, t.id DESC';
 
-        if ($statut !== null) {
-            $sql .= ' WHERE t.statut = :statut';
-            $params['statut'] = $statut->value;
+        $stmt = $this->pdo->prepare(
+            self::COLONNES
+            . ' FROM (SELECT t.id FROM tickets t' . $where . $ordre . ' LIMIT :limite OFFSET :offset) page'
+            . ' INNER JOIN tickets t ON t.id = page.id '
+            . self::JOINTURES
+            . $ordre
+        );
+
+        foreach ($params as $cle => $valeur) {
+            $stmt->bindValue($cle, $valeur);
         }
 
-        $sql .= ' ORDER BY t.created_at DESC';
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        // PARAM_INT explicite : LIMIT et OFFSET n'acceptent pas une chaine.
+        $stmt->bindValue('limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
 
         return array_map(Ticket::fromRow(...), $stmt->fetchAll());
+    }
+
+    /** Nombre total de tickets (avec le meme filtre que findPage), pour la pagination. */
+    public function compter(?TicketStatut $statut = null): int
+    {
+        // Pas de jointure : chaque ticket a une commande et un client (cles
+        // etrangeres NOT NULL), compter sur tickets seul donne le meme total.
+        [$where, $params] = self::filtreStatut($statut);
+
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM tickets t' . $where);
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** @return array{string, array<string, string>} clause WHERE et ses parametres */
+    private static function filtreStatut(?TicketStatut $statut): array
+    {
+        return $statut === null
+            ? ['', []]
+            : [' WHERE t.statut = :statut', ['statut' => $statut->value]];
     }
 
     public function findById(int $id): ?Ticket
