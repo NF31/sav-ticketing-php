@@ -87,6 +87,10 @@ final class Session
     public static function destroy(): void
     {
         $_SESSION = [];
-        session_destroy();
+
+        // Sans session active (ex. tests en CLI), rien a detruire.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
     }
 }

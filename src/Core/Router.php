@@ -85,7 +85,11 @@ final class Router
             }
 
             [$controllerClass, $action] = $route['handler'];
-            $controller = new $controllerClass();
+            // Meme instance d'Auth pour le controleur que pour le routeur :
+            // l'utilisateur deja charge pour le controle d'acces est reutilise.
+            // Transmise seulement aux controleurs qui la demandent.
+            $parametres = new \ReflectionClass($controllerClass)->getConstructor()?->getNumberOfParameters() ?? 0;
+            $controller = $parametres > 0 ? new $controllerClass($authService) : new $controllerClass();
             $controller->$action($request->withRouteParams($params));
 
             return;
