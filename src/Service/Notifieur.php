@@ -21,6 +21,8 @@ use PDOException;
  * l'auteur de l'action (il sait deja ce qu'il vient de faire).
  *
  * - nouveau ticket        -> les admins, qui l'assignent
+ * - retour client importe -> les admins, qui l'assignent (pas d'auteur :
+ *                            le ticket vient de kbeauty-shop)
  * - assignation           -> le technicien assigne (+ email : il n'est pas
  *                            forcement connecte)
  * - reassignation         -> l'ancien technicien, qui n'a plus a s'en occuper
@@ -44,6 +46,15 @@ final class Notifieur
             if ($admin->id !== $auteur->id) {
                 $this->notifier($admin->id, $ticketId, NotificationType::NouveauTicket, "Nouveau ticket {$code} a assigner (cree par {$auteur->nomComplet()}).");
             }
+        }
+    }
+
+    public function retourRecu(int $ticketId, string $numeroCommande): void
+    {
+        $code = TicketRepository::code($ticketId);
+
+        foreach ($this->users->findAdmins() as $admin) {
+            $this->notifier($admin->id, $ticketId, NotificationType::NouveauTicket, "Nouveau retour client {$code} (commande {$numeroCommande}) a assigner, recu de la boutique.");
         }
     }
 

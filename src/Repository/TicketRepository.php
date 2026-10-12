@@ -128,17 +128,22 @@ final class TicketRepository
      * l'ancien code (TCK-0042-a1b2, 13 caracteres) n'y tenait jamais, d'ou
      * une erreur 500 a chaque creation de ticket.
      */
+    /**
+     * @param int|null $retourKbeautyId demande de retour kbeauty-shop a l'origine
+     *                                  du ticket (import) ; UNIQUE en base
+     */
     public function create(
         int $commandeId,
         TicketType $type,
         ?string $description,
+        ?int $retourKbeautyId = null,
     ): int {
         $this->pdo->beginTransaction();
 
         try {
             $insert = $this->pdo->prepare(
-                'INSERT INTO tickets (code, commande_id, type, statut, description)
-                 VALUES (:code, :commande_id, :type, :statut, :description)'
+                'INSERT INTO tickets (code, commande_id, type, statut, description, retour_kbeauty_id)
+                 VALUES (:code, :commande_id, :type, :statut, :description, :retour_kbeauty_id)'
             );
             $insert->execute([
                 'code' => 'TMP-' . bin2hex(random_bytes(3)),
@@ -146,6 +151,7 @@ final class TicketRepository
                 'type' => $type->value,
                 'statut' => TicketStatut::Nouveau->value,
                 'description' => $description,
+                'retour_kbeauty_id' => $retourKbeautyId,
             ]);
             $id = (int) $this->pdo->lastInsertId();
 
@@ -160,6 +166,16 @@ final class TicketRepository
         }
 
         return $id;
+    }
+
+    /** Ticket deja cree pour cette demande de retour kbeauty-shop, s'il existe. */
+    public function findIdParRetourKbeauty(int $retourKbeautyId): ?int
+    {
+        $stmt = $this->pdo->prepare('SELECT id FROM tickets WHERE retour_kbeauty_id = :id LIMIT 1');
+        $stmt->execute(['id' => $retourKbeautyId]);
+        $id = $stmt->fetchColumn();
+
+        return $id !== false ? (int) $id : null;
     }
 
     public static function code(int $id): string

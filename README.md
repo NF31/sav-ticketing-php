@@ -56,6 +56,8 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
   SDK (meme requete que `resend/resend-php`, sans Guzzle)
 - SCSS compile avec Dart Sass (theme clair/sombre, aucune dependance CSS
   ou police externe)
+- RabbitMQ (`php-amqplib`) et JSON Schema (`justinrainbow/json-schema`)
+  pour l'integration avec kbeauty-shop : seules dependances de production
 - PHPUnit (tests unitaires sur la machine a etats + tests d'integration
   sur les repositories, contre une vraie base)
 
@@ -274,6 +276,36 @@ Sans ORM, la protection contre l'injection SQL repose sur trois niveaux :
    `tests/Integration/DroitsBaseTest.php` echoue si `.env` utilise un
    compte qui peut modifier le schema.
 
+## Integration avec kbeauty-shop (RabbitMQ)
+
+Quand un client fait une demande de retour sur la boutique
+[kbeauty-shop](https://github.com/NF31/kbeauty-shop) (Laravel), un ticket
+"Retour client (boutique)" est cree ici automatiquement et les admins sont
+notifies. Les deux applications ne partagent ni base ni code : la boutique
+publie un evenement `return_request.submitted` sur RabbitMQ, ce SAV le
+consomme.
+
+- Contrat : `contracts/rabbitmq/return-request-submitted.schema.json`
+  (copie ; la boutique, productrice, a la version de reference). Chaque
+  message est verifie avant traitement (`ContratRetourSoumis`) ; un message
+  hors contrat n'est jamais traite.
+- Idempotent : un meme message recu deux fois ne cree qu'un ticket
+  (`tickets.retour_kbeauty_id` UNIQUE).
+- Echecs : message hors contrat ou 5 echecs de suite -> file
+  `sav.retours.rejetes`, pour examen ; rien n'est perdu.
+- Compte RabbitMQ `sav` a droits limites (ses files uniquement).
+
+```bash
+# Base creee avant l'integration :
+docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/migrations/003_integration_kbeauty.sql
+# RabbitMQ + comptes : kbeauty-ecosystem/rabbitmq/creer-comptes.sh
+# .env : lignes RABBITMQ_* de .env.example, puis :
+php bin/consommer-retours-kbeauty.php   # processus long (supervisor/systemd en production)
+```
+
+Explication complete (choix, securite, essais, limites) :
+`kbeauty-shop/docs/montee-competence/20-integration-sav-rabbitmq.md`.
+
 ## Tests
 
 ```bash
@@ -291,3 +323,5 @@ sont en `MAIL_MAILER=log` : aucun envoi reel, aucun secret necessaire.
 - Formulaire de creation de commande/client depuis la meme page qu'un
   ticket (actuellement il faut deja avoir une commande existante)
 - Recherche/filtre par client ou technicien
+- Integration kbeauty-shop dans l'autre sens : publier les changements de
+  statut d'un ticket pour que le client suive son retour depuis la boutique
