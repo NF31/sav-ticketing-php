@@ -26,6 +26,8 @@ final class TicketRepository
 
     private const string SELECT_BASE = self::COLONNES . ' FROM tickets t ' . self::JOINTURES;
 
+    private const string ORDRE_LISTE = ' ORDER BY t.created_at DESC, t.id DESC';
+
     public function __construct(private readonly PDO $pdo)
     {
     }
@@ -52,14 +54,13 @@ final class TicketRepository
     public function findPage(?TicketStatut $statut, int $limite, int $offset): array
     {
         [$where, $params] = self::filtreStatut($statut);
-        $ordre = ' ORDER BY t.created_at DESC, t.id DESC';
 
         $stmt = $this->pdo->prepare(
             self::COLONNES
-            . ' FROM (SELECT t.id FROM tickets t' . $where . $ordre . ' LIMIT :limite OFFSET :offset) page'
+            . ' FROM (SELECT t.id FROM tickets t' . $where . self::ORDRE_LISTE . ' LIMIT :limite OFFSET :offset) page'
             . ' INNER JOIN tickets t ON t.id = page.id '
             . self::JOINTURES
-            . $ordre
+            . self::ORDRE_LISTE
         );
 
         foreach ($params as $cle => $valeur) {
@@ -87,7 +88,12 @@ final class TicketRepository
         return (int) $stmt->fetchColumn();
     }
 
-    /** @return array{string, array<string, string>} clause WHERE et ses parametres */
+    /**
+     * Clause WHERE en texte fixe : la valeur du statut passe uniquement par
+     * un parametre, jamais dans le SQL (RequetesSqlTest le verifie).
+     *
+     * @return array{string, array<string, string>} clause WHERE et ses parametres
+     */
     private static function filtreStatut(?TicketStatut $statut): array
     {
         return $statut === null
