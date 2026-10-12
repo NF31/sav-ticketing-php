@@ -68,9 +68,11 @@ jobs:
         run: |
           docker exec -i ${{ job.services.mariadb.id }} mariadb -uroot -proot sav_ticketing < database/schema.sql
           docker exec -i ${{ job.services.mariadb.id }} mariadb -uroot -proot sav_ticketing < database/seed.sql
+          docker exec -i ${{ job.services.mariadb.id }} mariadb -uroot -proot < database/utilisateur_app.sql
 
-      # .env de test : port de la base du service ci-dessus, et emails ecrits
-      # dans var/mail.log (aucun envoi reel, aucun secret necessaire).
+      # .env de test : port de la base du service ci-dessus, compte limite
+      # sav_app (comme .env.example), et emails ecrits dans var/mail.log
+      # (aucun envoi reel, aucun secret necessaire).
       - name: Configurer l'environnement de test
         run: |
           cp .env.example .env
