@@ -2,10 +2,14 @@
 /** @var string $content */
 /** @var \App\Core\Auth $auth */
 /** @var string $cheminCourant */
+/** @var int $notificationsNonLues */
 $user = $auth->user();
 
+// [href, libelle, icone, badge] ; Notifications en deuxieme : sur mobile, la
+// navigation defile horizontalement et les derniers liens sont caches.
 $liens = [
     ['/tickets', 'Tickets', 'ticket'],
+    ['/notifications', 'Notifications', 'cloche', $notificationsNonLues],
     ['/clients', 'Clients', 'clients'],
     ['/articles', 'Articles', 'articles'],
 ];
@@ -43,10 +47,14 @@ $estActif = static fn (string $href): bool => $cheminCourant === $href || str_st
             </a>
 
             <nav class="sidebar__nav" aria-label="Navigation principale">
-                <?php foreach ($liens as [$href, $libelle, $icone]): ?>
+                <?php foreach ($liens as $lien): ?>
+                    <?php [$href, $libelle, $icone] = $lien; $badge = $lien[3] ?? 0; ?>
                     <a href="<?= e($href) ?>" class="sidebar__link"<?= $estActif($href) ? ' aria-current="page"' : '' ?>>
                         <?= icone($icone) ?>
                         <?= e($libelle) ?>
+                        <?php if ($badge > 0): ?>
+                            <span class="sidebar__badge"><?= $badge > 99 ? '99+' : $badge ?><span class="visually-hidden"> non lue<?= $badge > 1 ? 's' : '' ?></span></span>
+                        <?php endif; ?>
                     </a>
                 <?php endforeach; ?>
             </nav>

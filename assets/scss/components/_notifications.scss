@@ -1,0 +1,62 @@
+@use "../abstracts" as *;
+
+// Liste de la page Notifications : une ligne cliquable par notification,
+// les non lues marquees d'un point et d'un fond teinte.
+.notifications {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification + .notification {
+  border-top: 1px solid var(--color-border);
+}
+
+.notification__lien {
+  display: flex;
+  flex-direction: column;
+  gap: space(1);
+  padding: space(4) space(5);
+  color: var(--color-text-muted);
+  transition: background $transition;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    text-decoration: none;
+  }
+
+  @include focus-ring;
+
+  @include from(sm) {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: space(4);
+  }
+}
+
+.notification__date {
+  flex-shrink: 0;
+  color: var(--color-text-subtle);
+  font-size: font-size(sm);
+  white-space: nowrap;
+}
+
+.notification--non-lue {
+  .notification__lien {
+    background: var(--color-primary-soft);
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .notification__message::before {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: space(2);
+    border-radius: 50%;
+    background: var(--color-primary);
+    vertical-align: middle;
+  }
+}
