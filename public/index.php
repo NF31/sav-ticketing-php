@@ -32,7 +32,14 @@ $conteneur = new Conteneur();
 (require __DIR__ . '/../config/services.php')($conteneur);
 
 SecurityHeaders::envoyer();
-Session::start();
+
+$request = Request::fromGlobals();
+
+// Interrogee toutes les 15 s par chaque onglet ouvert : en lecture seule,
+// elle ne prolonge pas la session. Sinon un onglet oublie garderait
+// l'utilisateur connecte indefiniment, la session n'expirant qu'apres
+// une periode sans aucune requete.
+Session::start(lectureSeule: $request->method === 'GET' && $request->path === '/notifications/etat');
 
 $router = new Router($conteneur);
 
@@ -59,6 +66,7 @@ $router->post('/clients', [ClientController::class, 'store'], auth: true);
 $router->get('/articles', [ArticleController::class, 'index'], auth: true);
 
 $router->get('/notifications', [NotificationController::class, 'index'], auth: true);
+$router->get('/notifications/etat', [NotificationController::class, 'etat'], auth: true);
 $router->post('/notifications/tout-lire', [NotificationController::class, 'toutMarquerLu'], auth: true);
 
 $router->get('/admin/techniciens', [AdminController::class, 'techniciens'], auth: true, admin: true);
@@ -70,5 +78,5 @@ $router->post('/admin/techniciens', [AdminController::class, 'creerTechnicien'],
 View::utiliserAuth($conteneur->get(Auth::class));
 View::utiliserNotifications($conteneur->get(NotificationRepository::class));
 
-$router->dispatch(Request::fromGlobals());
+$router->dispatch($request);
 ApresReponse::terminer();
