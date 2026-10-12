@@ -60,3 +60,74 @@
     vertical-align: middle;
   }
 }
+
+// Messages "nouvelle notification" affiches en direct
+// (public/assets/notifications.js), empiles en bas a droite.
+.toasts {
+  position: fixed;
+  right: space(4);
+  bottom: space(4);
+  left: space(4);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: space(2);
+  pointer-events: none;
+
+  @include from(sm) {
+    left: auto;
+    width: 24rem;
+  }
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: space(2);
+  width: 100%;
+  padding: space(3) space(3) space(3) space(4);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: radius(md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  animation: toast-entree 200ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.toast__lien {
+  flex: 1;
+  color: var(--color-text);
+  font-size: font-size(sm);
+  font-weight: 500;
+
+  @include focus-ring;
+}
+
+.toast__fermer {
+  padding: 0 space(1);
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: font-size(lg);
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  @include focus-ring;
+}
+
+@keyframes toast-entree {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
