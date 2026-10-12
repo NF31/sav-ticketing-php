@@ -42,7 +42,8 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
 
 ## Stack
 
-- PHP 8.5, sans framework (routeur, DI, ORM tous ecrits a la main)
+- PHP 8.5, sans framework (routeur, conteneur d'injection de dependances,
+  acces aux donnees tous ecrits a la main)
 - PDO / MySQL (MariaDB en dev), uniquement des requetes preparees
 - `enum` natifs pour les statuts/roles/types (pas de "magic strings")
 - Proprietes `readonly` pour les entites (DTO immutables)
@@ -56,6 +57,30 @@ academique fait en groupe (`Filrouge2_sav`). Objectifs :
   ou police externe)
 - PHPUnit (tests unitaires sur la machine a etats + tests d'integration
   sur les repositories, contre une vraie base)
+
+## Architecture
+
+MVC ecrit a la main, avec injection de dependances :
+
+- `public/index.php` : point d'entree unique (front controller), declare
+  les routes.
+- `config/services.php` : **racine de composition**, le seul endroit ou
+  les objets sont crees et relies entre eux (PDO, repositories, `Auth`,
+  `Mailer`, controleurs), via un petit conteneur (`src/Core/Conteneur.php`)
+  qui cree chaque service a la premiere demande, une seule fois par
+  requete, et detecte les dependances circulaires.
+- `src/Controller/` : recoivent leurs dependances par le constructeur
+  (aucun `new` de dependance, aucune lecture de `$_POST`/`$_GET` : tout
+  passe par l'objet `Request`).
+- `src/Repository/` : acces SQL (requetes preparees), recoivent la
+  connexion PDO.
+- `src/Entity/`, `src/Enum/` (dont la machine a etats des statuts),
+  `src/Validation/` : donnees et regles metier, sans acces a la base.
+- `templates/` : vues PHP, echappement systematique.
+
+Un test (`tests/Integration/ServicesTest.php`) construit chaque controleur
+depuis la vraie configuration : un service oublie dans
+`config/services.php` fait echouer la CI, pas la production.
 
 ## Design (SCSS)
 

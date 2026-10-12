@@ -4,18 +4,14 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Core\Database;
 use App\Entity\Client;
 use PDO;
 use PDOException;
 
 final class ClientRepository
 {
-    private PDO $pdo;
-
-    public function __construct(?PDO $pdo = null)
+    public function __construct(private readonly PDO $pdo)
     {
-        $this->pdo = $pdo ?? Database::connection();
     }
 
     /** @return list<Client> */

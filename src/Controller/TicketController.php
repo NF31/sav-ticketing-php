@@ -17,23 +17,18 @@ use App\Validation\TicketValidator;
 
 final class TicketController
 {
-    private Auth $auth;
-    private TicketRepository $tickets;
-    private CommandeRepository $commandes;
-    private UserRepository $users;
-
-    public function __construct(?Auth $auth = null)
-    {
-        $this->auth = $auth ?? new Auth();
-        $this->tickets = new TicketRepository();
-        $this->commandes = new CommandeRepository();
-        $this->users = new UserRepository();
+    public function __construct(
+        private readonly Auth $auth,
+        private readonly TicketRepository $tickets,
+        private readonly CommandeRepository $commandes,
+        private readonly UserRepository $users,
+    ) {
     }
 
     public function index(Request $request): void
     {
-        $statutFiltre = $_GET['statut'] ?? null;
-        $statut = is_string($statutFiltre) && $statutFiltre !== '' ? TicketStatut::tryFrom($statutFiltre) : null;
+        $statutFiltre = $request->query('statut');
+        $statut = $statutFiltre !== null && $statutFiltre !== '' ? TicketStatut::tryFrom($statutFiltre) : null;
 
         View::render('tickets/index', [
             'tickets' => $this->tickets->findAll($statut),
@@ -76,7 +71,7 @@ final class TicketController
 
     public function store(Request $request): void
     {
-        $donnees = TicketValidator::normaliser($_POST);
+        $donnees = TicketValidator::normaliser($request->donnees());
         $erreurs = TicketValidator::valider($donnees, $this->commandes->existe(...));
 
         if ($erreurs !== []) {
