@@ -32,6 +32,7 @@ use App\Repository\NotificationRepository;
 use App\Repository\PasswordResetRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
+use App\Service\ImportRetourKbeauty;
 use App\Service\Notifieur;
 use App\Service\TicketService;
 
@@ -71,6 +72,13 @@ return static function (Conteneur $c): void {
         $c->get(TicketRepository::class),
         $c->get(CommandeRepository::class),
         $c->get(UserRepository::class),
+        $c->get(Notifieur::class),
+    ));
+
+    $c->set(ImportRetourKbeauty::class, static fn (Conteneur $c): ImportRetourKbeauty => new ImportRetourKbeauty(
+        $c->get(ClientRepository::class),
+        $c->get(CommandeRepository::class),
+        $c->get(TicketRepository::class),
         $c->get(Notifieur::class),
     ));
 

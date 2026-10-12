@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use PDO;
+use PDOException;
 
 final class CommandeRepository
 {
@@ -39,6 +40,44 @@ final class CommandeRepository
         $stmt->execute(['client_id' => $clientId, 'date' => $dateCommande]);
 
         return (int) $this->pdo->lastInsertId();
+    }
+
+    /**
+     * Commande importee d'une autre application (ex. kbeauty-shop), retrouvee
+     * par son numero d'origine : un second retour sur la meme commande la
+     * reutilise. La contrainte UNIQUE tranche si deux imports la creent en
+     * meme temps.
+     */
+    public function trouverOuCreerParReference(string $reference, int $clientId, string $dateCommande): int
+    {
+        $existante = $this->findIdParReference($reference);
+        if ($existante !== null) {
+            return $existante;
+        }
+
+        try {
+            $this->pdo->prepare(
+                'INSERT INTO commandes (client_id, date_commande, reference_externe) VALUES (:client_id, :date, :reference)'
+            )->execute(['client_id' => $clientId, 'date' => $dateCommande, 'reference' => $reference]);
+        } catch (PDOException $e) {
+            // 1062 = entree en double : creee entre-temps par un autre import.
+            if (($e->errorInfo[1] ?? null) === 1062) {
+                return $this->findIdParReference($reference) ?? throw $e;
+            }
+
+            throw $e;
+        }
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    private function findIdParReference(string $reference): ?int
+    {
+        $stmt = $this->pdo->prepare('SELECT id FROM commandes WHERE reference_externe = :reference LIMIT 1');
+        $stmt->execute(['reference' => $reference]);
+        $id = $stmt->fetchColumn();
+
+        return $id !== false ? (int) $id : null;
     }
 
     public function ajouterArticle(int $commandeId, int $articleId, int $quantite): void

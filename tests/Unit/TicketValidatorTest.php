@@ -39,6 +39,12 @@ final class TicketValidatorTest extends TestCase
         self::assertSame('Type de ticket inconnu.', self::valider(['commande_id' => '1', 'type' => 'urgent'])['type']);
     }
 
+    /** Les retours viennent uniquement de la boutique (RabbitMQ), pas du formulaire. */
+    public function testUnRetourNePeutPasEtreSaisiALaMain(): void
+    {
+        self::assertSame('Type de ticket inconnu.', self::valider(['commande_id' => '1', 'type' => 'retour'])['type']);
+    }
+
     public function testDescriptionLimiteeEnCaracteres(): void
     {
         $max = TicketValidator::LONGUEUR_MAX_DESCRIPTION;

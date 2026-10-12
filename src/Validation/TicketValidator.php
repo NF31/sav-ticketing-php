@@ -48,7 +48,7 @@ final class TicketValidator
             },
             'type' => match (true) {
                 $donnees['type'] === '' => 'Le type de ticket est obligatoire.',
-                TicketType::tryFrom($donnees['type']) === null => 'Type de ticket inconnu.',
+                !in_array(TicketType::tryFrom($donnees['type']), TicketType::saisissables(), true) => 'Type de ticket inconnu.',
                 default => null,
             },
             'description' => mb_strlen($donnees['description']) > self::LONGUEUR_MAX_DESCRIPTION
