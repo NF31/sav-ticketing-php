@@ -21,6 +21,15 @@ final class Auth
      */
     private const string HASH_FACTICE = '$2y$12$g4SuuExKE2FX8QGEQpBXsuti4.GoYlQYwJfjx42IaXioOT5YQFOIa';
 
+    /**
+     * Utilisateur deja charge pendant cette requete : user() est appele
+     * plusieurs fois par page (routeur, controleur, layout), une seule
+     * requete SQL suffit. Le cache vit le temps de la requete HTTP (une
+     * instance d'Auth par requete, creee dans public/index.php).
+     */
+    private ?User $utilisateur = null;
+    private bool $utilisateurCharge = false;
+
     public function __construct(private readonly UserRepository $users = new UserRepository())
     {
     }
@@ -46,6 +55,7 @@ final class Auth
         Csrf::regenerer();
         Session::set(self::SESSION_KEY, $user->id);
         Session::set(self::SESSION_EMPREINTE, self::empreinte($user));
+        $this->memoriser($user);
 
         return true;
     }
@@ -53,6 +63,7 @@ final class Auth
     public function logout(): void
     {
         Session::destroy();
+        $this->memoriser(null);
     }
 
     /**
@@ -62,6 +73,15 @@ final class Auth
      * deconnectees, sans table de sessions a maintenir.
      */
     public function user(): ?User
+    {
+        if (!$this->utilisateurCharge) {
+            $this->memoriser($this->chargerDepuisSession());
+        }
+
+        return $this->utilisateur;
+    }
+
+    private function chargerDepuisSession(): ?User
     {
         $id = Session::get(self::SESSION_KEY);
         $user = is_int($id) ? $this->users->findById($id) : null;
@@ -80,6 +100,12 @@ final class Auth
         }
 
         return $user;
+    }
+
+    private function memoriser(?User $user): void
+    {
+        $this->utilisateur = $user;
+        $this->utilisateurCharge = true;
     }
 
     public function check(): bool
