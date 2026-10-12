@@ -18,10 +18,11 @@ use App\Validation\TicketValidator;
 
 /**
  * Cas d'usage qui modifient un ticket : creation, changement de statut,
- * assignation. Les regles metier y sont appliquees, independamment du
- * HTTP : le controleur traduit la requete en appel, puis le resultat (ou
- * l'exception) en reponse. La meme regle s'appliquerait donc a une API ou
- * une commande CLI, sans etre recopiee.
+ * assignation, chacun suivi des notifications (Notifieur) une fois la
+ * modification enregistree. Les regles metier y sont appliquees,
+ * independamment du HTTP : le controleur traduit la requete en appel,
+ * puis le resultat (ou l'exception) en reponse. La meme regle
+ * s'appliquerait donc a une API ou une commande CLI, sans etre recopiee.
  *
  * Les lectures simples (liste, detail) restent en acces direct aux
  * repositories : il n'y a aucune regle a y appliquer.
@@ -32,6 +33,7 @@ final class TicketService
         private readonly TicketRepository $tickets,
         private readonly CommandeRepository $commandes,
         private readonly UserRepository $users,
+        private readonly Notifieur $notifieur,
     ) {
     }
 
@@ -40,7 +42,7 @@ final class TicketService
      * @return int id du ticket cree
      * @throws SaisieInvalide
      */
-    public function creer(array $saisie): int
+    public function creer(array $saisie, User $auteur): int
     {
         $donnees = TicketValidator::normaliser($saisie);
         $erreurs = TicketValidator::valider($donnees, $this->commandes->existe(...));
@@ -49,18 +51,22 @@ final class TicketService
             throw new SaisieInvalide($erreurs, $donnees);
         }
 
-        return $this->tickets->create(
+        $id = $this->tickets->create(
             (int) $donnees['commande_id'],
             TicketType::from($donnees['type']),
             $donnees['description'] !== '' ? $donnees['description'] : null,
         );
+
+        $this->notifieur->ticketCree($id, $auteur);
+
+        return $id;
     }
 
     /**
      * @throws TicketIntrouvable
      * @throws RegleMetierViolee
      */
-    public function changerStatut(int $ticketId, TicketStatut $nouveauStatut, int $auteurId): void
+    public function changerStatut(int $ticketId, TicketStatut $nouveauStatut, User $auteur): void
     {
         $ticket = $this->trouver($ticketId);
 
@@ -71,9 +77,11 @@ final class TicketService
         // Le repository ne modifie le ticket que s'il a encore le statut lu
         // ci-dessus : si quelqu'un l'a change entre-temps, la transition
         // verifiee n'est plus la bonne.
-        if (!$this->tickets->changerStatut($ticketId, $ticket->statut, $nouveauStatut, $auteurId)) {
+        if (!$this->tickets->changerStatut($ticketId, $ticket->statut, $nouveauStatut, $auteur->id)) {
             throw new RegleMetierViolee('Le ticket vient d\'etre modifie par quelqu\'un d\'autre. Verifiez son statut et reessayez.');
         }
+
+        $this->notifieur->statutChange($ticket, $nouveauStatut, $auteur);
     }
 
     /**
@@ -81,7 +89,7 @@ final class TicketService
      * @throws TicketIntrouvable
      * @throws RegleMetierViolee
      */
-    public function assigner(int $ticketId, ?int $technicienId): User
+    public function assigner(int $ticketId, ?int $technicienId, User $auteur): User
     {
         $ticket = $this->trouver($ticketId);
 
@@ -105,6 +113,8 @@ final class TicketService
         if (!$this->tickets->assignerTechnicien($ticketId, $technicien->id)) {
             throw new RegleMetierViolee('Le ticket vient d\'etre termine : il ne peut plus etre reassigne.');
         }
+
+        $this->notifieur->ticketAssigne($ticket, $technicien, $auteur);
 
         return $technicien;
     }

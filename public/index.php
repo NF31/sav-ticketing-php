@@ -6,6 +6,7 @@ use App\Controller\AdminController;
 use App\Controller\ArticleController;
 use App\Controller\AuthController;
 use App\Controller\ClientController;
+use App\Controller\NotificationController;
 use App\Controller\PasswordResetController;
 use App\Controller\TicketController;
 use App\Core\ApresReponse;
@@ -17,6 +18,7 @@ use App\Core\Router;
 use App\Core\SecurityHeaders;
 use App\Core\Session;
 use App\Core\View;
+use App\Repository\NotificationRepository;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -56,12 +58,17 @@ $router->post('/clients', [ClientController::class, 'store'], auth: true);
 
 $router->get('/articles', [ArticleController::class, 'index'], auth: true);
 
+$router->get('/notifications', [NotificationController::class, 'index'], auth: true);
+$router->post('/notifications/tout-lire', [NotificationController::class, 'toutMarquerLu'], auth: true);
+
 $router->get('/admin/techniciens', [AdminController::class, 'techniciens'], auth: true, admin: true);
 $router->post('/admin/techniciens', [AdminController::class, 'creerTechnicien'], auth: true, admin: true);
 
 // Le layout reutilise l'instance d'Auth de la requete (deja chargee par le
-// routeur pour le controle d'acces).
+// routeur pour le controle d'acces), et affiche le nombre de notifications
+// non lues.
 View::utiliserAuth($conteneur->get(Auth::class));
+View::utiliserNotifications($conteneur->get(NotificationRepository::class));
 
 $router->dispatch(Request::fromGlobals());
 ApresReponse::terminer();
