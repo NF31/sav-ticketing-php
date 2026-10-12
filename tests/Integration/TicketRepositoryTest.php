@@ -67,6 +67,36 @@ final class TicketRepositoryTest extends TestCase
         self::assertNotSame($this->tickets->findById($a)?->code, $this->tickets->findById($b)?->code);
     }
 
+    /**
+     * Verrouillage optimiste : si le statut a change depuis sa lecture (autre
+     * utilisateur), la mise a jour est refusee et rien n'est journalise.
+     */
+    public function testChangerStatutRefuseSiLeStatutAChangeEntreTemps(): void
+    {
+        $id = $this->tickets->create(1, TicketType::Reparation, null);
+        $this->ticketsCrees[] = $id;
+        $adminId = (new UserRepository($this->pdo))->findByEmail('admin@sav.local')?->id ?? 0;
+
+        // Deux utilisateurs lisent "nouveau" ; le premier passe en cours.
+        self::assertTrue($this->tickets->changerStatut($id, TicketStatut::Nouveau, TicketStatut::EnCours, $adminId));
+        // Le second, qui croit encore le ticket "nouveau", est refuse.
+        self::assertFalse($this->tickets->changerStatut($id, TicketStatut::Nouveau, TicketStatut::EnAttentePiece, $adminId));
+
+        self::assertSame(TicketStatut::EnCours, $this->tickets->findById($id)?->statut);
+        self::assertCount(1, $this->tickets->historique($id));
+    }
+
+    public function testAssignerTechnicienRefuseUnTicketTermine(): void
+    {
+        $id = $this->tickets->create(1, TicketType::Reparation, null);
+        $this->ticketsCrees[] = $id;
+        $karimId = (new UserRepository($this->pdo))->findByEmail('karim.diallo@sav.local')?->id ?? 0;
+        $this->pdo->prepare("UPDATE tickets SET statut = 'termine' WHERE id = :id")->execute(['id' => $id]);
+
+        self::assertFalse($this->tickets->assignerTechnicien($id, $karimId));
+        self::assertNull($this->tickets->findById($id)?->technicienId);
+    }
+
     public function testCommandeExiste(): void
     {
         $commandes = new CommandeRepository($this->pdo);

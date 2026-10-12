@@ -34,4 +34,18 @@ final class TicketStatutTest extends TestCase
             self::assertNotSame('', $statut->label());
         }
     }
+
+    public function testPeutPasserASuitLesTransitionsAutorisees(): void
+    {
+        self::assertTrue(TicketStatut::Nouveau->peutPasserA(TicketStatut::EnCours));
+        self::assertFalse(TicketStatut::Nouveau->peutPasserA(TicketStatut::Termine));
+        self::assertFalse(TicketStatut::EnCours->peutPasserA(TicketStatut::EnCours));
+    }
+
+    public function testSeulUnTicketTermineNEstPlusReassignable(): void
+    {
+        foreach (TicketStatut::cases() as $statut) {
+            self::assertSame($statut !== TicketStatut::Termine, $statut->estReassignable(), $statut->value);
+        }
+    }
 }

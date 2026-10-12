@@ -29,6 +29,7 @@ use App\Repository\CommandeRepository;
 use App\Repository\PasswordResetRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
+use App\Service\TicketService;
 
 return static function (Conteneur $c): void {
     // Infrastructure
@@ -52,6 +53,13 @@ return static function (Conteneur $c): void {
     // les controleurs et le layout (l'utilisateur n'est charge qu'une fois).
     $c->set(Auth::class, static fn (Conteneur $c): Auth => new Auth($c->get(UserRepository::class)));
 
+    // Services metier
+    $c->set(TicketService::class, static fn (Conteneur $c): TicketService => new TicketService(
+        $c->get(TicketRepository::class),
+        $c->get(CommandeRepository::class),
+        $c->get(UserRepository::class),
+    ));
+
     // Controleurs
     $c->set(AuthController::class, static fn (Conteneur $c): AuthController => new AuthController(
         $c->get(Auth::class),
@@ -65,6 +73,7 @@ return static function (Conteneur $c): void {
     ));
     $c->set(TicketController::class, static fn (Conteneur $c): TicketController => new TicketController(
         $c->get(Auth::class),
+        $c->get(TicketService::class),
         $c->get(TicketRepository::class),
         $c->get(CommandeRepository::class),
         $c->get(UserRepository::class),

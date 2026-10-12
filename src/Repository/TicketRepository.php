@@ -118,14 +118,26 @@ final class TicketRepository
      * Met a jour le statut d'un ticket et journalise le changement dans
      * ticket_historique, dans la meme transaction : ajout par rapport a
      * l'original, qui n'avait aucune tracabilite des changements de statut.
+     *
+     * Verrouillage optimiste : la mise a jour n'a lieu que si le ticket a
+     * toujours $ancienStatut. Deux changements simultanes depuis le meme
+     * statut ne passent donc pas tous les deux.
+     *
+     * @return bool false si le ticket n'a plus $ancienStatut (rien n'est ecrit)
      */
-    public function changerStatut(int $ticketId, TicketStatut $ancienStatut, TicketStatut $nouveauStatut, int $userId): void
+    public function changerStatut(int $ticketId, TicketStatut $ancienStatut, TicketStatut $nouveauStatut, int $userId): bool
     {
         $this->pdo->beginTransaction();
 
         try {
-            $update = $this->pdo->prepare('UPDATE tickets SET statut = :statut WHERE id = :id');
-            $update->execute(['statut' => $nouveauStatut->value, 'id' => $ticketId]);
+            $update = $this->pdo->prepare('UPDATE tickets SET statut = :statut WHERE id = :id AND statut = :ancien');
+            $update->execute(['statut' => $nouveauStatut->value, 'id' => $ticketId, 'ancien' => $ancienStatut->value]);
+
+            if ($update->rowCount() === 0) {
+                $this->pdo->rollBack();
+
+                return false;
+            }
 
             $historique = $this->pdo->prepare(
                 'INSERT INTO ticket_historique (ticket_id, ancien_statut, nouveau_statut, user_id)
@@ -144,12 +156,17 @@ final class TicketRepository
 
             throw $e;
         }
+
+        return true;
     }
 
-    public function assignerTechnicien(int $ticketId, int $technicienId): void
+    /** @return bool false si le ticket n'existe pas ou est termine (rien n'est ecrit) */
+    public function assignerTechnicien(int $ticketId, int $technicienId): bool
     {
-        $stmt = $this->pdo->prepare('UPDATE tickets SET technicien_id = :tech WHERE id = :id');
-        $stmt->execute(['tech' => $technicienId, 'id' => $ticketId]);
+        $stmt = $this->pdo->prepare('UPDATE tickets SET technicien_id = :tech WHERE id = :id AND statut <> :termine');
+        $stmt->execute(['tech' => $technicienId, 'id' => $ticketId, 'termine' => TicketStatut::Termine->value]);
+
+        return $stmt->rowCount() > 0;
     }
 
     /** @return list<array{ancien_statut: ?string, nouveau_statut: string, user_nom: string, created_at: string}> */
