@@ -219,6 +219,26 @@ final class NotificationsTest extends TestCase
         self::assertFalse($recentes[0]->estLue());
     }
 
+    /** Suivi en direct : seules les non lues posterieures au point de depart sont renvoyees. */
+    public function testNonLuesDepuisUnPointDeDepart(): void
+    {
+        $a = $this->creerTicket();
+        $this->service->assigner($a, $this->lea->id, $this->admin);
+        $depart = $this->notifications->derniereId($this->lea->id);
+
+        $b = $this->creerTicket();
+        $c = $this->creerTicket();
+        $this->service->assigner($b, $this->lea->id, $this->admin);
+        $this->service->assigner($c, $this->lea->id, $this->admin);
+        $this->notifications->marquerLuesPourTicket($this->lea->id, $c);
+
+        $nouvelles = $this->notifications->nonLuesDepuis($this->lea->id, $depart, 5);
+
+        self::assertSame([$b], array_map(static fn ($n): int => $n->ticketId, $nouvelles));
+        self::assertGreaterThan($depart, $this->notifications->derniereId($this->lea->id));
+        self::assertSame(0, $this->notifications->derniereId(999999));
+    }
+
     private function creerTicket(?User $auteur = null): int
     {
         $id = $this->service->creer(['commande_id' => '1', 'type' => 'reparation', 'description' => ''], $auteur ?? $this->admin);

@@ -6,10 +6,18 @@ namespace App\Core;
 
 final class Session
 {
-    public static function start(): void
+    /**
+     * @param bool $lectureSeule session lue puis fermee aussitot, sans
+     *                           ecriture : la requete ne prolonge pas la
+     *                           session (son fichier n'est pas "touche") et ne
+     *                           bloque pas les autres requetes du meme
+     *                           utilisateur (verrou relache tout de suite)
+     */
+    public static function start(bool $lectureSeule = false): void
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start([
+                'read_and_close' => $lectureSeule,
                 'cookie_httponly' => true,
                 'cookie_samesite' => 'Lax',
                 // Cookie envoye uniquement en HTTPS quand l'app y est servie

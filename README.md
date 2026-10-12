@@ -96,7 +96,17 @@ MVC ecrit a la main, avec injection de dependances :
 
   Badge du nombre de non lues dans la barre laterale, page
   `/notifications` ; ouvrir un ticket marque ses notifications comme
-  lues. L'email part apres la reponse (`ApresReponse`) et une
+  lues.
+
+  En direct, sans recharger la page (`public/assets/notifications.js`) :
+  la page interroge `/notifications/etat` toutes les 15 s, met a jour le
+  badge et le titre de l'onglet ("(2) SAV Ticketing") et affiche chaque
+  nouvelle notification dans un message cliquable. Interrogation
+  periodique plutot que Server-Sent Events ou WebSocket : en PHP
+  classique, une connexion gardee ouverte occupe un processus PHP par
+  onglet (le serveur de dev n'en a que 4). Aucune requete quand l'onglet
+  est en arriere-plan, et la session y est ouverte en lecture seule : un
+  onglet oublie ne prolonge pas la session indefiniment. L'email part apres la reponse (`ApresReponse`) et une
   notification en echec est journalisee sans annuler l'action deja
   enregistree.
 - `src/Repository/` : acces SQL (requetes preparees), recoivent la
@@ -252,6 +262,3 @@ sont en `MAIL_MAILER=log` : aucun envoi reel, aucun secret necessaire.
 - Formulaire de creation de commande/client depuis la meme page qu'un
   ticket (actuellement il faut deja avoir une commande existante)
 - Recherche/filtre par client ou technicien
-- Notifications en temps reel : le badge se met a jour a chaque
-  chargement de page, pas en direct (il faudrait du polling ou des
-  Server-Sent Events)
