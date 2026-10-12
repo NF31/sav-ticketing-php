@@ -1,0 +1,139 @@
+@use "../abstracts" as *;
+
+// Coquille de l'application connectee : barre laterale + contenu.
+// Mobile : barre du haut avec navigation defilante ; a partir de md :
+// barre laterale fixe a gauche.
+
+.app {
+  min-height: 100vh;
+
+  @include from(md) {
+    display: grid;
+    grid-template-columns: $sidebar-width 1fr;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: space(4);
+  padding: space(3) space(4);
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
+
+  @include from(md) {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: space(6) space(4);
+    gap: space(8);
+  }
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  color: var(--color-sidebar-text-active);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.sidebar__logo {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: radius(md);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  flex-shrink: 0;
+}
+
+.sidebar__nav {
+  display: flex;
+  gap: space(1);
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  @include from(md) {
+    flex-direction: column;
+    overflow: visible;
+  }
+}
+
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  padding: space(2) space(3);
+  border-radius: radius(md);
+  color: var(--color-sidebar-text);
+  font-size: font-size(base);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background $transition, color $transition;
+
+  &:hover {
+    background: var(--color-sidebar-hover);
+    color: var(--color-sidebar-text-active);
+    text-decoration: none;
+  }
+
+  &[aria-current="page"] {
+    background: var(--color-sidebar-hover);
+    color: var(--color-sidebar-text-active);
+    box-shadow: inset 3px 0 0 var(--color-primary);
+  }
+}
+
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: space(3);
+  padding-top: space(4);
+  border-top: 1px solid var(--color-sidebar-border);
+
+  @include from(md) {
+    margin-top: auto;
+  }
+}
+
+.sidebar__user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.sidebar__user-name {
+  color: var(--color-sidebar-text-active);
+  font-weight: 600;
+  font-size: font-size(sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar__user-role {
+  font-size: font-size(xs);
+}
+
+.main {
+  min-width: 0;
+  padding: space(6) space(4) space(12);
+
+  @include from(md) {
+    padding: space(8) space(10) space(12);
+  }
+}
+
+.main__inner {
+  max-width: $content-max-width;
+  margin: 0 auto;
+}

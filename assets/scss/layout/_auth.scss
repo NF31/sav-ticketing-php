@@ -1,0 +1,60 @@
+@use "../abstracts" as *;
+
+// Pages hors connexion (connexion, mot de passe oublie) : carte centree.
+.auth {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: space(6) space(4);
+  background:
+    radial-gradient(circle at 15% 0%, var(--color-primary-soft), transparent 45%),
+    var(--color-bg);
+}
+
+.auth__panel {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: space(3);
+  margin-bottom: space(6);
+  font-size: font-size(lg);
+  font-weight: 700;
+  color: var(--color-text);
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  .sidebar__logo {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+.auth__card {
+  padding: space(8) space(6);
+
+  @include from(sm) {
+    padding: space(8);
+  }
+}
+
+.auth__title {
+  margin-bottom: space(1);
+}
+
+.auth__subtitle {
+  margin-bottom: space(6);
+  color: var(--color-text-muted);
+  font-size: font-size(sm);
+}
+
+.auth__footer {
+  margin-top: space(6);
+  text-align: center;
+}
