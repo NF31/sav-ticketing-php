@@ -50,4 +50,15 @@ enum TicketStatut: string
             self::Termine => [],
         };
     }
+
+    public function peutPasserA(self $cible): bool
+    {
+        return in_array($cible, $this->transitionsAutorisees(), true);
+    }
+
+    /** Un ticket termine est clos : on ne change plus son technicien. */
+    public function estReassignable(): bool
+    {
+        return $this !== self::Termine;
+    }
 }

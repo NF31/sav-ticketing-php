@@ -13,12 +13,22 @@ use App\Enum\TicketType;
 use App\Repository\CommandeRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
+use App\Service\Exception\RegleMetierViolee;
+use App\Service\Exception\SaisieInvalide;
+use App\Service\Exception\TicketIntrouvable;
+use App\Service\TicketService;
 use App\Validation\TicketValidator;
 
+/**
+ * Couche HTTP : lit la requete, appelle TicketService pour toute
+ * modification, puis choisit la reponse (redirection, message, 404).
+ * Aucune regle metier ici.
+ */
 final class TicketController
 {
     public function __construct(
         private readonly Auth $auth,
+        private readonly TicketService $service,
         private readonly TicketRepository $tickets,
         private readonly CommandeRepository $commandes,
         private readonly UserRepository $users,
@@ -71,22 +81,15 @@ final class TicketController
 
     public function store(Request $request): void
     {
-        $donnees = TicketValidator::normaliser($request->donnees());
-        $erreurs = TicketValidator::valider($donnees, $this->commandes->existe(...));
-
-        if ($erreurs !== []) {
-            Session::flashDonnees('erreurs', $erreurs);
-            Session::flashDonnees('anciennes', $donnees);
+        try {
+            $id = $this->service->creer($request->donnees());
+        } catch (SaisieInvalide $e) {
+            Session::flashDonnees('erreurs', $e->erreurs);
+            Session::flashDonnees('anciennes', $e->donnees);
             header('Location: /tickets/create');
 
             return;
         }
-
-        $id = $this->tickets->create(
-            (int) $donnees['commande_id'],
-            TicketType::from($donnees['type']),
-            $donnees['description'] !== '' ? $donnees['description'] : null,
-        );
 
         Session::flash('success', 'Ticket ' . TicketRepository::code($id) . ' cree.');
         header('Location: /tickets/' . $id);
@@ -95,32 +98,27 @@ final class TicketController
     public function changerStatut(Request $request): void
     {
         $id = (int) $request->param('id');
-        $ticket = $this->tickets->findById($id);
-
-        if ($ticket === null) {
-            $this->ticketIntrouvable();
-
-            return;
-        }
-
         $nouveauStatut = TicketStatut::tryFrom($request->input('statut'));
         $user = $this->auth->user();
 
         if ($nouveauStatut === null || $user === null) {
-            Session::flash('error', 'Statut inconnu.');
-            header('Location: /tickets/' . $id);
+            $this->retourAvecErreur($id, 'Statut inconnu.');
 
             return;
         }
 
-        if (!in_array($nouveauStatut, $ticket->statut->transitionsAutorisees(), true)) {
-            Session::flash('error', "Transition de statut non autorisee ({$ticket->statut->label()} -> {$nouveauStatut->label()}).");
-            header('Location: /tickets/' . $id);
+        try {
+            $this->service->changerStatut($id, $nouveauStatut, $user->id);
+        } catch (TicketIntrouvable) {
+            $this->ticketIntrouvable();
+
+            return;
+        } catch (RegleMetierViolee $e) {
+            $this->retourAvecErreur($id, $e->getMessage());
 
             return;
         }
 
-        $this->tickets->changerStatut($id, $ticket->statut, $nouveauStatut, $user->id);
         Session::flash('success', "Statut passe a \"{$nouveauStatut->label()}\".");
         header('Location: /tickets/' . $id);
     }
@@ -128,36 +126,26 @@ final class TicketController
     public function assigner(Request $request): void
     {
         $id = (int) $request->param('id');
-        $ticket = $this->tickets->findById($id);
 
-        if ($ticket === null) {
+        try {
+            $technicien = $this->service->assigner($id, $request->intInput('technicien_id'));
+        } catch (TicketIntrouvable) {
             $this->ticketIntrouvable();
 
             return;
-        }
-
-        $technicienId = $request->intInput('technicien_id');
-        // Verifie en base que c'est un technicien : sans ca, un id inexistant
-        // faisait planter la page (cle etrangere) et l'id d'un admin etait
-        // accepte.
-        $technicien = $technicienId !== null ? $this->users->findTechnicien($technicienId) : null;
-
-        $erreur = match (true) {
-            $ticket->statut === TicketStatut::Termine => 'Un ticket termine ne peut plus etre reassigne.',
-            $technicienId === null => 'Choisissez un technicien.',
-            $technicien === null => 'Technicien introuvable (seuls les comptes technicien peuvent etre assignes).',
-            default => null,
-        };
-
-        if ($erreur !== null) {
-            Session::flash('error', $erreur);
-            header('Location: /tickets/' . $id);
+        } catch (RegleMetierViolee $e) {
+            $this->retourAvecErreur($id, $e->getMessage());
 
             return;
         }
 
-        $this->tickets->assignerTechnicien($id, $technicien->id);
         Session::flash('success', "Ticket assigne a {$technicien->nomComplet()}.");
+        header('Location: /tickets/' . $id);
+    }
+
+    private function retourAvecErreur(int $id, string $message): void
+    {
+        Session::flash('error', $message);
         header('Location: /tickets/' . $id);
     }
 
