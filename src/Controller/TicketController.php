@@ -9,9 +9,11 @@ use App\Core\Pagination;
 use App\Core\Request;
 use App\Core\Session;
 use App\Core\View;
+use App\Entity\User;
 use App\Enum\TicketStatut;
 use App\Enum\TicketType;
 use App\Repository\CommandeRepository;
+use App\Repository\NotificationRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Service\Exception\RegleMetierViolee;
@@ -33,6 +35,7 @@ final class TicketController
         private readonly TicketRepository $tickets,
         private readonly CommandeRepository $commandes,
         private readonly UserRepository $users,
+        private readonly NotificationRepository $notifications,
     ) {
     }
 
@@ -62,6 +65,10 @@ final class TicketController
             return;
         }
 
+        // Ouvrir le ticket vaut lecture de ses notifications (badge a jour
+        // des cette page).
+        $this->notifications->marquerLuesPourTicket($this->utilisateur()->id, $id);
+
         View::render('tickets/show', [
             'ticket' => $ticket,
             'historique' => $this->tickets->historique($id),
@@ -86,7 +93,7 @@ final class TicketController
     public function store(Request $request): void
     {
         try {
-            $id = $this->service->creer($request->donnees());
+            $id = $this->service->creer($request->donnees(), $this->utilisateur());
         } catch (SaisieInvalide $e) {
             Session::flashDonnees('erreurs', $e->erreurs);
             Session::flashDonnees('anciennes', $e->donnees);
@@ -103,16 +110,15 @@ final class TicketController
     {
         $id = (int) $request->param('id');
         $nouveauStatut = TicketStatut::tryFrom($request->input('statut'));
-        $user = $this->auth->user();
 
-        if ($nouveauStatut === null || $user === null) {
+        if ($nouveauStatut === null) {
             $this->retourAvecErreur($id, 'Statut inconnu.');
 
             return;
         }
 
         try {
-            $this->service->changerStatut($id, $nouveauStatut, $user->id);
+            $this->service->changerStatut($id, $nouveauStatut, $this->utilisateur());
         } catch (TicketIntrouvable) {
             $this->ticketIntrouvable();
 
@@ -132,7 +138,7 @@ final class TicketController
         $id = (int) $request->param('id');
 
         try {
-            $technicien = $this->service->assigner($id, $request->intInput('technicien_id'));
+            $technicien = $this->service->assigner($id, $request->intInput('technicien_id'), $this->utilisateur());
         } catch (TicketIntrouvable) {
             $this->ticketIntrouvable();
 
@@ -145,6 +151,12 @@ final class TicketController
 
         Session::flash('success', "Ticket assigne a {$technicien->nomComplet()}.");
         header('Location: /tickets/' . $id);
+    }
+
+    /** Routes protegees (auth: true) : le routeur a deja verifie la connexion. */
+    private function utilisateur(): User
+    {
+        return $this->auth->user() ?? throw new \LogicException('Utilisateur connecte attendu sur une route protegee.');
     }
 
     private function retourAvecErreur(int $id, string $message): void

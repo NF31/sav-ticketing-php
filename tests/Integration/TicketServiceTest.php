@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use App\Core\ApresReponse;
 use App\Core\Database;
 use App\Core\Env;
+use App\Entity\User;
 use App\Enum\TicketStatut;
 use App\Repository\CommandeRepository;
+use App\Repository\NotificationRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Service\Exception\RegleMetierViolee;
 use App\Service\Exception\SaisieInvalide;
 use App\Service\Exception\TicketIntrouvable;
+use App\Service\Notifieur;
 use App\Service\TicketService;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\MailerEspion;
 
 /**
  * Regles metier des tickets, sur la vraie base. Les tickets crees ici sont
@@ -37,11 +42,15 @@ final class TicketServiceTest extends TestCase
         $this->pdo = Database::connection();
         $this->tickets = new TicketRepository($this->pdo);
         $this->users = new UserRepository($this->pdo);
-        $this->service = new TicketService($this->tickets, new CommandeRepository($this->pdo), $this->users);
+        // Les notifications sont testees dans NotificationsTest.
+        $notifieur = new Notifieur(new NotificationRepository($this->pdo), $this->users, new MailerEspion(), 'http://localhost');
+        $this->service = new TicketService($this->tickets, new CommandeRepository($this->pdo), $this->users, $notifieur);
     }
 
     protected function tearDown(): void
     {
+        ApresReponse::executerTaches();
+
         foreach ($this->ticketsCrees as $id) {
             $this->pdo->prepare('DELETE FROM tickets WHERE id = :id')->execute(['id' => $id]);
         }
@@ -61,7 +70,7 @@ final class TicketServiceTest extends TestCase
         $avant = $this->nombreDeTickets();
 
         try {
-            $this->service->creer(['commande_id' => '999999', 'type' => 'inconnu', 'description' => '  texte  ']);
+            $this->service->creer(['commande_id' => '999999', 'type' => 'inconnu', 'description' => '  texte  '], $this->admin());
             self::fail('SaisieInvalide attendue.');
         } catch (SaisieInvalide $e) {
             self::assertSame(['commande_id', 'type'], array_keys($e->erreurs));
@@ -76,7 +85,7 @@ final class TicketServiceTest extends TestCase
     {
         $id = $this->creerTicket();
 
-        $this->service->changerStatut($id, TicketStatut::EnCours, $this->adminId());
+        $this->service->changerStatut($id, TicketStatut::EnCours, $this->admin());
 
         self::assertSame(TicketStatut::EnCours, $this->tickets->findById($id)?->statut);
         $historique = $this->tickets->historique($id);
@@ -90,7 +99,7 @@ final class TicketServiceTest extends TestCase
         $id = $this->creerTicket();
 
         try {
-            $this->service->changerStatut($id, TicketStatut::Termine, $this->adminId());
+            $this->service->changerStatut($id, TicketStatut::Termine, $this->admin());
             self::fail('RegleMetierViolee attendue.');
         } catch (RegleMetierViolee $e) {
             self::assertSame('Transition de statut non autorisee (Nouveau -> Termine).', $e->getMessage());
@@ -104,7 +113,7 @@ final class TicketServiceTest extends TestCase
     {
         $this->expectException(TicketIntrouvable::class);
 
-        $this->service->changerStatut(999999, TicketStatut::EnCours, $this->adminId());
+        $this->service->changerStatut(999999, TicketStatut::EnCours, $this->admin());
     }
 
     public function testAssignerUnTechnicien(): void
@@ -112,7 +121,7 @@ final class TicketServiceTest extends TestCase
         $id = $this->creerTicket();
         $karim = $this->users->findByEmail('karim.diallo@sav.local');
 
-        $technicien = $this->service->assigner($id, $karim?->id);
+        $technicien = $this->service->assigner($id, $karim?->id, $this->admin());
 
         self::assertSame($karim?->id, $technicien->id);
         self::assertSame($karim?->id, $this->tickets->findById($id)?->technicienId);
@@ -124,8 +133,8 @@ final class TicketServiceTest extends TestCase
         $id = $this->creerTicket();
         $karimId = $this->users->findByEmail('karim.diallo@sav.local')?->id;
 
-        $this->service->assigner($id, $karimId);
-        $technicien = $this->service->assigner($id, $karimId);
+        $this->service->assigner($id, $karimId, $this->admin());
+        $technicien = $this->service->assigner($id, $karimId, $this->admin());
 
         self::assertSame($karimId, $technicien->id);
     }
@@ -137,14 +146,14 @@ final class TicketServiceTest extends TestCase
 
         $this->expectExceptionObject(new RegleMetierViolee('Un ticket termine ne peut plus etre reassigne.'));
 
-        $this->service->assigner($id, $this->users->findByEmail('karim.diallo@sav.local')?->id);
+        $this->service->assigner($id, $this->users->findByEmail('karim.diallo@sav.local')?->id, $this->admin());
     }
 
     public function testAssignerSansTechnicienEstRefuse(): void
     {
         $this->expectExceptionObject(new RegleMetierViolee('Choisissez un technicien.'));
 
-        $this->service->assigner($this->creerTicket(), null);
+        $this->service->assigner($this->creerTicket(), null, $this->admin());
     }
 
     public function testAssignerUnAdminEstRefuse(): void
@@ -152,7 +161,7 @@ final class TicketServiceTest extends TestCase
         $id = $this->creerTicket();
 
         try {
-            $this->service->assigner($id, $this->adminId());
+            $this->service->assigner($id, $this->admin()->id, $this->admin());
             self::fail('RegleMetierViolee attendue.');
         } catch (RegleMetierViolee $e) {
             self::assertStringStartsWith('Technicien introuvable', $e->getMessage());
@@ -165,20 +174,20 @@ final class TicketServiceTest extends TestCase
     {
         $this->expectException(TicketIntrouvable::class);
 
-        $this->service->assigner(999999, $this->users->findByEmail('karim.diallo@sav.local')?->id);
+        $this->service->assigner(999999, $this->users->findByEmail('karim.diallo@sav.local')?->id, $this->admin());
     }
 
     private function creerTicket(): int
     {
-        $id = $this->service->creer(['commande_id' => '1', 'type' => 'reparation', 'description' => 'Ecran casse']);
+        $id = $this->service->creer(['commande_id' => '1', 'type' => 'reparation', 'description' => 'Ecran casse'], $this->admin());
         $this->ticketsCrees[] = $id;
 
         return $id;
     }
 
-    private function adminId(): int
+    private function admin(): User
     {
-        return $this->users->findByEmail('admin@sav.local')?->id ?? throw new \LogicException('Admin du seed absent.');
+        return $this->users->findByEmail('admin@sav.local') ?? throw new \LogicException('Admin du seed absent.');
     }
 
     private function nombreDeTickets(): int

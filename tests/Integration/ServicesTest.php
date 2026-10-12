@@ -12,8 +12,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Verifie la vraie configuration (config/services.php) : un controleur
- * ou un service oublie ou mal cable y est detecte par les tests et la CI, pas par une
- * erreur 500 en production.
+ * ou un service oublie ou mal cable y est detecte par les tests et la CI,
+ * pas par une erreur 500 en production.
  */
 final class ServicesTest extends TestCase
 {
@@ -32,7 +32,9 @@ final class ServicesTest extends TestCase
         $classes = [];
         foreach ([
             'Controller' => glob(__DIR__ . '/../../src/Controller/*Controller.php') ?: [],
-            'Service' => glob(__DIR__ . '/../../src/Service/*Service.php') ?: [],
+            // *.php non recursif : les exceptions de src/Service/Exception
+            // ne sont pas des services.
+            'Service' => glob(__DIR__ . '/../../src/Service/*.php') ?: [],
         ] as $dossier => $fichiers) {
             foreach ($fichiers as $fichier) {
                 $classes[basename($fichier, '.php')] = ["App\\{$dossier}\\" . basename($fichier, '.php')];
@@ -56,5 +58,6 @@ final class ServicesTest extends TestCase
 
         self::assertSame($auth, $lireAuth($this->conteneur->get(\App\Controller\TicketController::class)));
         self::assertSame($auth, $lireAuth($this->conteneur->get(\App\Controller\AuthController::class)));
+        self::assertSame($auth, $lireAuth($this->conteneur->get(\App\Controller\NotificationController::class)));
     }
 }

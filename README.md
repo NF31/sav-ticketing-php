@@ -83,6 +83,22 @@ MVC ecrit a la main, avec injection de dependances :
   ecrase. Les lectures simples restent en acces direct aux repositories ;
   la creation de clients et de techniciens (valider puis inserer) n'a pas
   de service, qui ne ferait que relayer les appels.
+- Notifications (`src/Service/Notifieur.php`), declenchees par
+  `TicketService` apres chaque modification reussie. Regle commune : on
+  ne notifie jamais l'auteur de l'action.
+
+  | Evenement | Qui est prevenu |
+  | --- | --- |
+  | Nouveau ticket | Les admins, pour l'assigner |
+  | Assignation | Le technicien assigne, dans l'application **et par email** |
+  | Reassignation | Aussi l'ancien technicien |
+  | Changement de statut | Le technicien assigne |
+
+  Badge du nombre de non lues dans la barre laterale, page
+  `/notifications` ; ouvrir un ticket marque ses notifications comme
+  lues. L'email part apres la reponse (`ApresReponse`) et une
+  notification en echec est journalisee sans annuler l'action deja
+  enregistree.
 - `src/Repository/` : acces SQL (requetes preparees), recoivent la
   connexion PDO.
 - Liste des tickets paginee (20 par page, `src/Core/Pagination.php`) et
@@ -213,6 +229,12 @@ avec (rejouable sans erreur)
 docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/migrations/001_index_tickets.sql
 ```
 
+Base creee avant l'ajout des notifications : creer la table avec
+
+```bash
+docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/migrations/002_notifications.sql
+```
+
 ## Tests
 
 ```bash
@@ -230,3 +252,6 @@ sont en `MAIL_MAILER=log` : aucun envoi reel, aucun secret necessaire.
 - Formulaire de creation de commande/client depuis la meme page qu'un
   ticket (actuellement il faut deja avoir une commande existante)
 - Recherche/filtre par client ou technicien
+- Notifications en temps reel : le badge se met a jour a chaque
+  chargement de page, pas en direct (il faudrait du polling ou des
+  Server-Sent Events)

@@ -60,6 +60,14 @@ final class UserRepository
     }
 
     /** @return list<User> */
+    public function findAdmins(): array
+    {
+        $stmt = $this->pdo->query("SELECT * FROM users WHERE role = 'admin' ORDER BY nom");
+
+        return array_map(User::fromRow(...), $stmt->fetchAll());
+    }
+
+    /** @return list<User> */
     public function findAll(): array
     {
         $stmt = $this->pdo->query('SELECT * FROM users ORDER BY role, nom');

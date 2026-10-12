@@ -86,6 +86,24 @@ CREATE TABLE ticket_historique (
     CONSTRAINT fk_hist_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Notifications dans l'application (cloche de la barre laterale) : un
+-- evenement sur un ticket qui concerne quelqu'un d'autre que son auteur
+-- (assignation, changement de statut, nouveau ticket a assigner).
+-- Message fige a la creation : il decrit l'evenement tel qu'il a eu lieu.
+-- L'index sert le compteur de non lues, calcule sur chaque page.
+CREATE TABLE notifications (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    ticket_id INT UNSIGNED NOT NULL,
+    type ENUM('assignation', 'desassignation', 'statut', 'nouveau_ticket') NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    lue_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notifications_user_lue (user_id, lue_at),
+    CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_notif_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Ajout par rapport a l'original (aucune recuperation de mot de passe) :
 -- jetons de reinitialisation. Seul le hash SHA-256 du jeton est stocke,
 -- jamais le jeton lui-meme : une fuite de la table ne permet pas de
