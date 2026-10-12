@@ -36,6 +36,10 @@ final class Database
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
+                // rowCount() d'un UPDATE = lignes trouvees par le WHERE, et non
+                // lignes reellement changees : reassigner le meme technicien
+                // compte alors comme un succes, pas comme un echec.
+                Pdo\Mysql::ATTR_FOUND_ROWS => true,
             ]);
         } catch (PDOException $e) {
             throw new PDOException('Connexion a la base impossible : ' . $e->getMessage(), (int) $e->getCode());

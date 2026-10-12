@@ -84,7 +84,7 @@ $libelleStatut = static fn (?string $valeur): string => $valeur !== null ? (Tick
                 <?php endif; ?>
             </div>
             <div class="card__section card__body">
-                <?php if ($ticket->statut === TicketStatut::Termine): ?>
+                <?php if (!$ticket->statut->estReassignable()): ?>
                     <p class="hint">Ticket termine : il ne peut plus etre reassigne.</p>
                 <?php else: ?>
                     <form action="/tickets/<?= $ticket->id ?>/assigner" method="post" class="inline-form">

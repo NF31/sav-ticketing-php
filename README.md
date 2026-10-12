@@ -69,9 +69,20 @@ MVC ecrit a la main, avec injection de dependances :
   `Mailer`, controleurs), via un petit conteneur (`src/Core/Conteneur.php`)
   qui cree chaque service a la premiere demande, une seule fois par
   requete, et detecte les dependances circulaires.
-- `src/Controller/` : recoivent leurs dependances par le constructeur
-  (aucun `new` de dependance, aucune lecture de `$_POST`/`$_GET` : tout
-  passe par l'objet `Request`).
+- `src/Controller/` : couche HTTP uniquement. Ils lisent la requete,
+  appellent un service pour toute modification, puis choisissent la
+  reponse (redirection, message, 404). Ils recoivent leurs dependances par
+  le constructeur (aucun `new` de dependance, aucune lecture de
+  `$_POST`/`$_GET` : tout passe par l'objet `Request`).
+- `src/Service/` : cas d'usage metier (`TicketService` : creer, changer
+  le statut, assigner). Les regles s'y appliquent sans rien savoir du HTTP,
+  et une regle violee leve une exception (`RegleMetierViolee`,
+  `SaisieInvalide`, `TicketIntrouvable`) que le controleur traduit en
+  reponse. Les ecritures concurrentes sont protegees par un verrouillage
+  optimiste : un statut change entre-temps par quelqu'un d'autre n'est pas
+  ecrase. Les lectures simples restent en acces direct aux repositories ;
+  la creation de clients et de techniciens (valider puis inserer) n'a pas
+  de service, qui ne ferait que relayer les appels.
 - `src/Repository/` : acces SQL (requetes preparees), recoivent la
   connexion PDO.
 - `src/Entity/`, `src/Enum/` (dont la machine a etats des statuts),
@@ -79,7 +90,7 @@ MVC ecrit a la main, avec injection de dependances :
 - `templates/` : vues PHP, echappement systematique.
 
 Un test (`tests/Integration/ServicesTest.php`) construit chaque controleur
-depuis la vraie configuration : un service oublie dans
+et chaque service depuis la vraie configuration : un service oublie dans
 `config/services.php` fait echouer la CI, pas la production.
 
 ## Design (SCSS)

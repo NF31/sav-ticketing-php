@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Verifie la vraie configuration (config/services.php) : un controleur
- * oublie ou mal cable y est detecte par les tests et la CI, pas par une
+ * ou un service oublie ou mal cable y est detecte par les tests et la CI, pas par une
  * erreur 500 en production.
  */
 final class ServicesTest extends TestCase
@@ -26,21 +26,25 @@ final class ServicesTest extends TestCase
         (require __DIR__ . '/../../config/services.php')($this->conteneur);
     }
 
-    /** @return array<string, array{class-string}> tous les controleurs de src/Controller */
-    public static function controleurs(): array
+    /** @return array<string, array{class-string}> tous les controleurs de src/Controller et services de src/Service */
+    public static function classesCablees(): array
     {
-        $controleurs = [];
-        foreach (glob(__DIR__ . '/../../src/Controller/*Controller.php') ?: [] as $fichier) {
-            $classe = 'App\\Controller\\' . basename($fichier, '.php');
-            $controleurs[basename($fichier, '.php')] = [$classe];
+        $classes = [];
+        foreach ([
+            'Controller' => glob(__DIR__ . '/../../src/Controller/*Controller.php') ?: [],
+            'Service' => glob(__DIR__ . '/../../src/Service/*Service.php') ?: [],
+        ] as $dossier => $fichiers) {
+            foreach ($fichiers as $fichier) {
+                $classes[basename($fichier, '.php')] = ["App\\{$dossier}\\" . basename($fichier, '.php')];
+            }
         }
 
-        return $controleurs;
+        return $classes;
     }
 
     /** @param class-string $classe */
-    #[DataProvider('controleurs')]
-    public function testChaqueControleurEstConstructible(string $classe): void
+    #[DataProvider('classesCablees')]
+    public function testChaqueControleurEtServiceEstConstructible(string $classe): void
     {
         self::assertInstanceOf($classe, $this->conteneur->get($classe));
     }
