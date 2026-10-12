@@ -15,20 +15,24 @@ use App\Controller\AdminController;
 use App\Controller\ArticleController;
 use App\Controller\AuthController;
 use App\Controller\ClientController;
+use App\Controller\NotificationController;
 use App\Controller\PasswordResetController;
 use App\Controller\TicketController;
 use App\Core\Auth;
 use App\Core\Conteneur;
 use App\Core\Database;
+use App\Core\Env;
 use App\Core\Mail\Mailer;
 use App\Core\Mail\MailerFactory;
 use App\Core\RateLimiter;
 use App\Repository\ArticleRepository;
 use App\Repository\ClientRepository;
 use App\Repository\CommandeRepository;
+use App\Repository\NotificationRepository;
 use App\Repository\PasswordResetRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
+use App\Service\Notifieur;
 use App\Service\TicketService;
 
 return static function (Conteneur $c): void {
@@ -42,6 +46,7 @@ return static function (Conteneur $c): void {
         ArticleRepository::class,
         ClientRepository::class,
         CommandeRepository::class,
+        NotificationRepository::class,
         PasswordResetRepository::class,
         TicketRepository::class,
         UserRepository::class,
@@ -54,10 +59,19 @@ return static function (Conteneur $c): void {
     $c->set(Auth::class, static fn (Conteneur $c): Auth => new Auth($c->get(UserRepository::class)));
 
     // Services metier
+    $c->set(Notifieur::class, static fn (Conteneur $c): Notifieur => new Notifieur(
+        $c->get(NotificationRepository::class),
+        $c->get(UserRepository::class),
+        $c->get(Mailer::class),
+        // Base des liens dans les emails : lue dans la config, jamais dans
+        // l'en-tete Host de la requete (falsifiable).
+        (string) Env::get('APP_URL', 'http://localhost:8090'),
+    ));
     $c->set(TicketService::class, static fn (Conteneur $c): TicketService => new TicketService(
         $c->get(TicketRepository::class),
         $c->get(CommandeRepository::class),
         $c->get(UserRepository::class),
+        $c->get(Notifieur::class),
     ));
 
     // Controleurs
@@ -77,6 +91,11 @@ return static function (Conteneur $c): void {
         $c->get(TicketRepository::class),
         $c->get(CommandeRepository::class),
         $c->get(UserRepository::class),
+        $c->get(NotificationRepository::class),
+    ));
+    $c->set(NotificationController::class, static fn (Conteneur $c): NotificationController => new NotificationController(
+        $c->get(Auth::class),
+        $c->get(NotificationRepository::class),
     ));
     $c->set(ClientController::class, static fn (Conteneur $c): ClientController => new ClientController($c->get(ClientRepository::class)));
     $c->set(ArticleController::class, static fn (Conteneur $c): ArticleController => new ArticleController($c->get(ArticleRepository::class)));
