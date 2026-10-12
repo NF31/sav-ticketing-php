@@ -1,0 +1,37 @@
+@use "../abstracts" as *;
+
+// Navigation entre les pages d'une liste : Precedent / Page x sur y / Suivant.
+// Sur telephone, l'info passe au-dessus des deux boutons.
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: space(3);
+  margin-top: space(5);
+
+  @include from(sm) {
+    flex-wrap: nowrap;
+  }
+}
+
+.pagination__info {
+  order: -1;
+  flex-basis: 100%;
+  margin: 0;
+  font-size: font-size(sm);
+  text-align: center;
+
+  @include from(sm) {
+    order: 0;
+    flex-basis: auto;
+  }
+}
+
+// Bouton inactif (premiere ou derniere page) : garde sa place pour que la
+// mise en page ne saute pas, mais grise et non cliquable.
+.pagination__inactif {
+  opacity: 0.45;
+  pointer-events: none;
+  box-shadow: none;
+}
