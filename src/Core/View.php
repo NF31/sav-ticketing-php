@@ -18,7 +18,12 @@ final class View
     public static function render(string $template, array $data = []): void
     {
         $content = self::capture($template, $data);
-        echo self::capture('layout/base', ['content' => $content, 'auth' => new Auth()]);
+        echo self::capture('layout/base', [
+            'content' => $content,
+            'auth' => new Auth(),
+            // Pour surligner la page courante dans la navigation.
+            'cheminCourant' => Request::normaliserChemin($_SERVER['REQUEST_URI'] ?? '/'),
+        ]);
     }
 
     /** @param array<string, mixed> $data */
