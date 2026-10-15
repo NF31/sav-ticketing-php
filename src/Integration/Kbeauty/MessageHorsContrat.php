@@ -6,7 +6,7 @@ namespace App\Integration\Kbeauty;
 
 use RuntimeException;
 
-/** Message RabbitMQ qui ne respecte pas contracts/rabbitmq/return-request-submitted.schema.json. */
+/** Message RabbitMQ qui ne respecte pas son contrat (voir contracts/rabbitmq/). */
 final class MessageHorsContrat extends RuntimeException
 {
     /** @param list<string> $erreurs */
