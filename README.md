@@ -306,6 +306,37 @@ php bin/consommer-retours-kbeauty.php   # processus long (supervisor/systemd en 
 Explication complete (choix, securite, essais, limites) :
 `kbeauty-shop/docs/montee-competence/20-integration-sav-rabbitmq.md`.
 
+## Integration avec kbeauty-customer-mdm (golden record client, RabbitMQ)
+
+Un client cree ici via un import de retour (section ci-dessus) ne voyait
+jamais ses changements de nom/email cote boutique repercutes - risque de
+divergence classique. [kbeauty-customer-mdm](https://github.com/NF31/kbeauty-customer-mdm)
+(Go) centralise desormais le golden record client et republie chaque mise
+a jour (`customer.golden_record.updated`), consommee ici pour garder la
+fiche client a jour.
+
+- Contrat : `contracts/rabbitmq/customer-golden-record-updated.schema.json`
+  (copie ; `kbeauty-customer-mdm`, producteur, a la version de reference).
+  Verifie par `ContratClientMiseAJour` avant traitement.
+- Cle de recherche stable : `clients.source_user_id` (identifiant User cote
+  kbeauty-shop), pas l'email qui peut changer. Les clients crees avant
+  cette integration (`source_user_id` encore NULL) sont retrouves par
+  email a la premiere mise a jour recue, qui renseigne alors cette
+  colonne - limite connue si le tout premier evenement change nom ET
+  email en meme temps (voir docblock de `MettreAJourClientGolden`).
+- Idempotent, memes garanties que l'integration retours (file quorum,
+  dead-letter `sav.clients.rejetes`, 5 essais).
+
+```bash
+# Base creee avant l'integration :
+docker exec -i sav-ticketing-mysql mariadb -uroot -proot sav_ticketing < database/migrations/004_mdm_client.sql
+# RabbitMQ : meme compte sav, droits etendus par kbeauty-ecosystem/rabbitmq/creer-comptes.sh
+php bin/consommer-clients-kbeauty.php   # processus long (supervisor/systemd en production)
+```
+
+Explication complete cote MDM :
+`kbeauty-customer-mdm/README.md` et `kbeauty-shop/docs/montee-competence/22-mdm-client.md`.
+
 ## Tests
 
 ```bash

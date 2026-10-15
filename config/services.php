@@ -33,6 +33,7 @@ use App\Repository\PasswordResetRepository;
 use App\Repository\TicketRepository;
 use App\Repository\UserRepository;
 use App\Service\ImportRetourKbeauty;
+use App\Service\MettreAJourClientGolden;
 use App\Service\Notifieur;
 use App\Service\TicketService;
 
@@ -80,6 +81,9 @@ return static function (Conteneur $c): void {
         $c->get(CommandeRepository::class),
         $c->get(TicketRepository::class),
         $c->get(Notifieur::class),
+    ));
+    $c->set(MettreAJourClientGolden::class, static fn (Conteneur $c): MettreAJourClientGolden => new MettreAJourClientGolden(
+        $c->get(ClientRepository::class),
     ));
 
     // Controleurs
