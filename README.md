@@ -356,3 +356,9 @@ sont en `MAIL_MAILER=log` : aucun envoi reel, aucun secret necessaire.
 - Recherche/filtre par client ou technicien
 - Integration kbeauty-shop dans l'autre sens : publier les changements de
   statut d'un ticket pour que le client suive son retour depuis la boutique
+
+## Développement assisté par IA
+
+Ce projet est développé avec un assistant IA (Claude Code). Je définis le périmètre,
+l'architecture et les priorités, puis je relis et teste chaque changement avant de le
+fusionner. Les commits co-écrits avec l'IA le signalent par une ligne `Co-Authored-By`.
