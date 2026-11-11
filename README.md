@@ -279,7 +279,7 @@ Sans ORM, la protection contre l'injection SQL repose sur trois niveaux :
 ## Integration avec kbeauty-shop (RabbitMQ)
 
 Quand un client fait une demande de retour sur la boutique
-[kbeauty-shop](https://github.com/NF31/kbeauty-shop) (Laravel), un ticket
+kbeauty-shop (Laravel, depot prive), un ticket
 "Retour client (boutique)" est cree ici automatiquement et les admins sont
 notifies. Les deux applications ne partagent ni base ni code : la boutique
 publie un evenement `return_request.submitted` sur RabbitMQ, ce SAV le
